@@ -5,7 +5,7 @@
 # LinuxJS
 
 LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript.<br>
-Its lightweight, fast, and licensed under the GPL 3.0 license.
+Its lightweight (just about 29Kb uncompressed!), fast, and licensed under the GPL 3.0 license.
 
 ---
 
