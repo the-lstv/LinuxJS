@@ -53,7 +53,7 @@ os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
   }
 })
 
-// Async variant
+// Async variant (stores stdout in a buffer, waits for exit, returns the buffer)
 console.log( await os.exec("ls -R") )
 ```
 ### Attaching an interactive bash to a terminal emulator:
