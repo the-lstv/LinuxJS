@@ -4,13 +4,20 @@
 
 # LinuxJS
 
-LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript.
+LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript.<br>
+Its lightweight, fast, and licensed under the GPL 3.0 license.
 
-**Please note that this is not a virtual machine or any kind of hardware/bytecode emulation.<br>
-The system is entirely in JavaScript - most binaries have been rewritten.<br>
-Tho, also note that this is not just a "simulator" - the goal is to have a somewhat cross-compatible and full-fledged environment, which emulates a real Linux machine as closely as possible.**
+---
 
-**Current version:** 0.2.58
+Please note that this is not a virtual machine or any kind of hardware/bytecode emulation.<br>
+The system is entirely in vanilla JavaScript - most binaries have been rewritten, little of the code is from the actual kernel.<br>
+Tho, also note that this is not just a "simulator" - the goal is to have a somewhat cross-compatible and full-fledged environment, which emulates a real Linux machine as closely as possible.
+
+---
+
+**Current version:** 0.2.58<br>
+- Interactive demo is comming soon!
+
 ## Features
 
 
