@@ -76,6 +76,8 @@ term.onKey(event => {
   bash.std.in = event.key // Pushes the key into the standard input
 })
 ```
+![image](https://github.com/lukas-studio-tv/LinuxJS/assets/62482747/42f28ccf-f220-4c31-99de-b7b9eeff8250)
+
 ### Environment variables:
 ```js
 // os.env contains global default environment variables, that are applied everywhere:
