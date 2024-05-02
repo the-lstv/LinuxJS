@@ -102,8 +102,27 @@ if(os.fs.exists("/bin") && os.fs.isDirectory("/bin")){
   )
 }
 
-// Directory parsing is quite dynamic and similar to Linux:
+// Path parsing is quite dynamic:
 os.fs.exists("//bin//") // true
 os.fs.exists("./bin") // true
 os.fs.exists("/etc/../bin") // true
+```
+### Making JavaScript 'commands':
+```js
+// Some special shebangs are included by default, like "#! /bin/js" for JavaScript.
+
+let content = `#! /bin/js
+
+std.out.write(\`Hello \${argv[0]}!\`)
+
+exit(0)
+`;
+
+os.fs.write("/usr/bin/example", content)
+
+os.process("example", null, ["world"], {
+  onstdout(data){
+     console.log(data)
+  }
+})
 ```
