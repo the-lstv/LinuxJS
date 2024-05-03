@@ -135,8 +135,11 @@ os.process("example", null, ["world"], {
   }
 })
 ```
-## Shell Script:
 
+# Alternative shells, languages, environments
+As LinuxJS is supposed to be actually useful and be able to run real programs, our goal is to support and port as much environments as possible in the browser engine (and if its not possible, make it possible).
+
+### Shell Script:
 Shell script support is being implemented, tho is not fully done at this point.
 You can probably run some basic scripts with no issues, but a lot of dependencies may be missing.
 Currently **unsupported** features: loop, switch
@@ -151,4 +154,12 @@ exit 0
 `)
 ```
 
-## 
+### Node.JS
+
+Node.JS support is planned, but not implemented at this point.
+Polyfils or ports of the builtin packages are being made (/lib64/node/globals.js)
+
+### Python
+
+Python is not going to be built-in, but support is planned as a package you can install.
+Most probably, Skulpt will be used to support 
