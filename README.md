@@ -149,6 +149,7 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
 | 🔵 Python | 🛠 Planned (external) |
 | 💲 Shell Script | ⚠ Partial |
 | 🟠 Rust | 💡 Maybe |
+| 🔵 Go | 💡 Maybe |
 | 🟣 Native binaries | 💡 Maybe |
 
 - ### Shell Script:
