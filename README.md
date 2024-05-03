@@ -40,6 +40,7 @@ Tho, also note that this is not just a "simulator" - the goal is to have a somew
 | 🖥 Graphical User Interface | ⚠ Partial |
 | 🌐 Networking Stack | ⚠ Partial |
 | 🎗️ systemctl | 🛠 Planned |
+| <a href="#alternative-shells-languages-environments">**More languages, shells, environments >**</a> |
 
 Feel free to contribute by fixing bugs, implementing new features, or suggesting improvements!
 
@@ -139,27 +140,66 @@ os.process("example", null, ["world"], {
 # Alternative shells, languages, environments
 As LinuxJS is supposed to be actually useful and be able to run real programs, our goal is to support and port as much environments as possible in the browser engine (and if its not possible, make it possible).
 
-### Shell Script:
-Shell script support is being implemented, tho is not fully done at this point.
-You can probably run some basic scripts with no issues, but a lot of dependencies may be missing.
-Currently **unsupported** features: loop, switch
 
-```js
-os.shell("bash", `
+## Compatibility table
+| Feature                      | Status       |
+|------------------------------|--------------|
+| 🟡 JavaScript | ✔ Implemented |
+| 🟢 Node.JS | 🛠 Planned |
+| 🔵 Python | 🛠 Planned (external) |
+| 💲 Shell Script | ⚠ Partial |
+| 🟠 Rust | 💡 Maybe |
+| 🟣 Native binaries | 💡 Maybe |
 
-world="world"
-echo "Hello $world!"
-exit 0
+- ### Shell Script:
+  Shell script support is being implemented, tho is not fully done at this point.
+  You can probably run some basic scripts with no issues, but a lot of dependencies may be missing.
+  Currently **unsupported** features: loop, switch
+  
+  ```js
+  os.shell("bash", `
+  
+  world="world"
+  echo "Hello $world!"
+  exit 0
+  
+  `)
+  ```
 
-`)
-```
+- ### Node.JS
+  Node.JS support is planned, but not implemented at yet.
+  Polyfils or ports of the builtin packages are being made (/lib64/node/globals.js)
+  The goal: Port fs, process, require() and all the other good stuff to work exactly like it does in Node.JS
 
-### Node.JS
+- ### Python
+  Python is not going to be built-in, but support is planned as a package you can install.
+  Most probably, Skulpt will be used to support 
 
-Node.JS support is planned, but not implemented at this point.
-Polyfils or ports of the builtin packages are being made (/lib64/node/globals.js)
+- ### Native Linux binaries
+  This is currently not implemented nor planned (at this point).
+  The idea is that we could attach a lightweight Linux virtual machine when a binary is launched, then sync the VM with your LinuxJS environment.
+  This is of course a bit more difficult to achieve and would result in some inconsistencies, and would require to make a modified Linux build.
+  (And of course, speed and efficiency is to be considered too.)
 
-### Python
-
-Python is not going to be built-in, but support is planned as a package you can install.
-Most probably, Skulpt will be used to support 
+- ### Remote applications
+  Through SSH, we can passthrough apps from a real Linux machine to LinuxJS.
+  Here are some examples:
+  ```js
+  // Assuming "term" is a Xterm.JS instance
+  
+  let bash = os.process("ssh", "~", ["<username>@<ip>", "-p", "<password>", "-r", "<command>"], {
+    onstdout(data){
+      term.write(data)
+    },
+    onstderr(data){
+      term.write(data)
+    },
+    onexit(code){
+      // ...
+    }
+  })
+  
+  term.onKey(event => {
+    bash.std.in = event.key // Pushes the key into the standard input
+  })
+  ```
