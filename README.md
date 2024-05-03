@@ -173,7 +173,26 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
 
 - ### Python
   Python is not going to be built-in, but support is planned as a package you can install.
-  Most probably, Skulpt will be used to support 
+  Most probably, Skulpt will be used to support Python.
+  If added, this is probably how it would work;
+  ```js
+  // *install python via a package manager*
+  
+  let content = `#! /usr/bin/env python
+  import sys
+  print("Hello, world!")
+
+  sys.exit()
+  `;
+  
+  os.fs.write("/tmp/example", content)
+  
+  os.process("example", "/tmp", [], {
+    onstdout(data){
+       console.log(data)
+    }
+  })
+  ```
 
 - ### Native Linux binaries
   This is currently not implemented nor planned (at this point).
@@ -187,7 +206,7 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
   ```js
   // Assuming "term" is a Xterm.JS instance
   
-  let bash = os.process("ssh", "~", ["<username>@<ip>", "-p", "<password>", "-r", "<command>"], {
+  let bash = os.process("ssh", null, ["<username>@<ip>", "-p", "<password>", "-r", "<command>"], {
     onstdout(data){
       term.write(data)
     },
