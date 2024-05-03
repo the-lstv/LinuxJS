@@ -135,3 +135,20 @@ os.process("example", null, ["world"], {
   }
 })
 ```
+## Shell Script:
+
+Shell script support is being implemented, tho is not fully done at this point.
+You can probably run some basic scripts with no issues, but a lot of dependencies may be missing.
+Currently **unsupported** features: loop, switch
+
+```js
+os.shell("bash", `
+
+world="world"
+echo "Hello $world!"
+exit 0
+
+`)
+```
+
+## 
