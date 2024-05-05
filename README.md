@@ -40,6 +40,7 @@ Tho, also note that this is not just a "simulator" - the goal is to have a somew
 | 👤 User Permissions | 🛠 Planned |
 | 📦 Package Management | 🛠 Planned |
 | 🖥 Graphical User Interface | ⚠ Partial |
+| 🪟 Integration with LS.Compositor (for web desktop environments) | ⚠ Partial |
 | 🌐 Networking Stack | ⚠ Partial |
 | 🎗️ systemctl | 🛠 Planned |
 | <a href="#alternative-shells-languages-environments">**More languages, shells, environments >**</a> |
