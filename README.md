@@ -144,16 +144,20 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
 
 
 ## Compatibility table
-| Feature                      | Status       |
+| Language/Framework                      | Status       |
 |------------------------------|--------------|
 | 🟡 JavaScript | ✔ Implemented |
 | 💲 Shell Script | ⚠ Partial |
-| 🔵 C++ | ⚠ Partial |
+| 🔵 C++ | 🛠 Planned |
 | 🟢 Node.JS | 🛠 Planned |
 | 🔵 Python | 🛠 Planned (external) |
 | 🟠 Rust | 💡 Maybe |
 | 🔵 Go | 💡 Maybe |
 | 🟣 Native binaries | 💡 Maybe |
+| App frameworks | |
+| 🔵 LSTV Arc | 💡 Maybe |
+| 📦 GTK | 💡 Maybe |
+| ⬜ LSTV Viewgate | 💡 Maybe |
 
 - ### Shell Script:
   Shell script support is being implemented, tho is not fully done at this point.
