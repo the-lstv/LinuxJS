@@ -231,3 +231,57 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
     bash.std.in = event.key // Pushes the key into the standard input
   })
   ```
+
+# Example software/libraries/modules
+
+- ### "arisen" package
+  The arisen package allows you to interact with GPT AI, ask it questions and let it stream an answer.
+  This package registers 2 commands - "arisen" for asking a question or to run a command, and "arisen-gui" for a GUI (LSTV Viewgate window composer required).
+
+  But it also registers a global library called "arisen":
+
+  ```js
+  let GPT = require("arisen");
+
+  let gpt = GPT({
+    api: "<your API URL>",
+    key: "<your API key>"
+  });
+  
+  gpt.ask("Hello. What is the current time?", {
+      onStart(){
+          console.log(" --- Starting to generate --- ")
+      },
+  
+      onData(text){
+          // Answer is streamed over a socked as tokens (in binary format) and decoded to text.
+  
+          console.log(text)
+      },
+  
+      onEnd(tokenCount){
+          console.log(` --- Finished! Consumed output tokens: ${tokenCount} --- `)
+      },
+  
+      onError(error){
+          console.error(error)
+      }
+  })
+  ```
+
+  - ### "wallpapers" package
+  This is just a simple package that contains the default wallpapers from LiDE.
+  If using a compatible desktop, they should automatically appear in your settings for you to apply.
+  
+  - ### "electron-supply" package
+  A library that attempts to provide various tools to make porting Electron desktop applications. This is in very early stage and most apps will probably be broken.
+  Node.JS emulation package is required.
+
+  - ### "arc" package
+  A port of LSTV Arc launcher to the web. Requires "electron-supply". Most apps are broken at this point. Also requires Viewgate.
+
+  - ### "viewgate-window-manager" package
+  A simple "window manager" and "compositor" using the LS framework to run on the web to simulate windows. Currently in early stage of development. Allows DOM, canvas, webGL and other as the window contents.
+  Fetures some cool events, methods, and builtin attributes.
+
+  **You do NOT need this if you are using FOSSHome, it is already built-in.** Installing this in FOSSHome will override the builtin behavior, this allows customization but is not recommended. Tho it is fairly simple to change between managers.
