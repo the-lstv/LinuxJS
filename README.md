@@ -74,6 +74,9 @@ console.log( await os.exec("ls -R") )
 ### Attaching an interactive bash to a terminal emulator:
 ```js
 // Assuming "term" is a Xterm.JS instance
+// Note that thanks to LinuxJS operating with standard i/o and escape codes, the terminal emulator can be any standard terminal! Its possible to hook this up to any terminal to use as with any other environment, technically even a ssh server.
+
+// Want a demo? Try "ssh linuxjs@extragon.cloud" with the password "LinuxJSDemo"!
 
 let bash = os.process("bash", "~", ["-i"], {
   onstdout(data){
