@@ -48,6 +48,10 @@ Tho, also note that this is not just a "simulator" - the goal is to have a somew
 Feel free to contribute by fixing bugs, implementing new features, or suggesting improvements!
 
 ## Usage examples
+### Initialization:
+```js
+let os = new LinuxJS();
+```
 ### Running a simple process:
 ```js
 // Run "ls -R" and log the result
