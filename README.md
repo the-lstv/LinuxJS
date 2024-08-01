@@ -50,7 +50,14 @@ Feel free to contribute by fixing bugs, implementing new features, or suggesting
 ## Usage examples
 ### Initialization:
 ```js
-let os = new LinuxJS();
+// If you can access the ArrayBuffer of the image directly (eg. in NodeJS with the fs module) you can just provide it directly into the LinuxJS constructor, without having to use remoteImage.
+// The "image" is a filesystem copy as an archive. It contains all the system "disk" files, thus the system itself.
+// You can simply use the default one provided in this repo which contains all the default commands, or you can modify/create your own.
+// In the future there may be some alternative ways to provide storage access, including passthrough.
+
+LinuxJS.remoteImage("./image.bin", image => {
+  let os = new LinuxJS({ image });
+})
 ```
 ### Running a simple process:
 ```js
