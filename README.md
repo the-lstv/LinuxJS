@@ -4,15 +4,15 @@
 
 # LinuxJS
 
-> ### "Imagine being able to emulate a Linux-like environment on any website, for any purpose of any scale, from just a simple, tiny library, with almost no overhead."
+> ### "Imagine being able to emulate a full Linux-like environment on any website/application, for any purpose of any scale, from just a simple, tiny library, with almost no overhead."
 
 LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript.<br>
-Its lightweight (just about 29Kb uncompressed!), fast, and licensed under the GPL 3.0 license.
+Its lightweight (just about 15Kb uncompressed!), fast, and licensed under the GPL 3.0 license.
 
 ---
 
 Please note that this is not a virtual machine or any kind of hardware/bytecode emulation.<br>
-The system is entirely in vanilla JavaScript - most has been rewritten, little of the code is taken from the actual kernel.<br>
+The system is entirely in vanilla JavaScript - most has been rewritten, little of the code is taken from the actual kernel or its parts.<br>
 Tho, also note that this is not just a "simulator" - the goal is to have a somewhat cross-compatible and functional environment, which emulates a real Linux machine as closely as possible.
 
 ---
@@ -26,23 +26,21 @@ Tho, also note that this is not just a "simulator" - the goal is to have a somew
 | Feature                      | Status       |
 |------------------------------|--------------|
 | 📁 Virtual File System | ✔ Implemented |
-| 📁 Advanced File System (mount, SFTP, symlinks..) | ⚠ Partial |
+| 📁 Advanced File System (mountpoints, symlinks..) | ⚠ Partial |
 | 🕹️ JavaScript API | ✔ Implemented |
-| 🔮 Process emulation, STDIO | ✔ Implemented |
+| 🔮 Process + stdio emulation | ✔ Implemented |
 | 💻 Compatible with terminal emulators | ✔ Implemented |
 | 💻 Bash Shell | ✔ Implemented |
-| 💻 Shell Script compatibility | ⚠ Partial |
+| 💻 Shell Script | ⚠ Partial |
 | 💻 Node.JS emulation, port builtin modules | ⚠ Partial |
 | 💻 PATH variable, run custom scripts, lib64, usr/bin | ✔ Implemented |
-| 📝 Basic commands (ls, cd, pwd, mkdir, rm..) | ⚠ Partial (70%) |
-| 📝 File Editing (touch, echo, cat, nano..) | ⚠ Partial |
+| 📝 Common commands (ls, cd, pwd, mkdir, rm, ...) | ⚠ Partial |
 | 👥 User Management, passwd | 🛠 Planned |
 | 👤 User Permissions | 🛠 Planned |
 | 📦 Package Management | 🛠 Planned |
 | 🖥 Graphical User Interface | ⚠ Partial |
-| 🪟 Integration with LS.Compositor (for web desktop environments) | ⚠ Partial |
-| 🌐 Networking Stack | ⚠ Partial |
-| 🎗️ systemctl | 🛠 Planned |
+| 🌐 Networking Stack | ⚠ Partial (Has curl, but needs custom protocols) |
+| 🎗️ systemd | 🛠 Planned |
 | <a href="#alternative-shells-languages-environments">**More languages, shells, environments >**</a> |
 
 Feel free to contribute by fixing bugs, implementing new features, or suggesting improvements!
@@ -51,9 +49,11 @@ Feel free to contribute by fixing bugs, implementing new features, or suggesting
 ### Initialization:
 ```js
 // If you can access the ArrayBuffer of the image directly (eg. in NodeJS with the fs module) you can just provide it directly into the LinuxJS constructor, without having to use remoteImage.
-// The "image" is a filesystem copy as an archive. It contains all the system "disk" files, thus the system itself.
-// You can simply use the default one provided in this repo which contains all the default commands, or you can modify/create your own.
-// In the future there may be some alternative ways to provide storage access, including passthrough.
+
+// The "image" is a filesystem copy as an archive. It contains all the system files.
+// Basically, think of it as a copy of a distribution.
+// You can simply use the default one provided in this repo which contains all the basics, or you can create your own.
+// In the future there may be some alternative ways to provide storage access, including passthrough options.
 
 LinuxJS.remoteImage("./image.bin", image => {
   let os = new LinuxJS({ image });
@@ -71,7 +71,7 @@ os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
 // Async variant (stores stdout in a buffer, waits for exit, returns the buffer)
 console.log( await os.exec("ls -R") )
 ```
-### Attaching an interactive bash to a terminal emulator:
+### Attaching an interactive bash shell to a terminal emulator:
 ```js
 // Assuming "term" is a Xterm.JS instance
 // Note that thanks to LinuxJS operating with standard i/o and escape codes, the terminal emulator can be any standard terminal! Its possible to hook this up to any terminal to use as with any other environment, technically even a ssh server.
@@ -92,6 +92,7 @@ let bash = os.process("bash", "~", ["-i"], {
 
 term.onKey(event => {
   bash.std.in = event.key // Pushes the key into the standard input
+  // alternatively: bash.std.input(event.key)
 })
 ```
 ![image](https://github.com/lukas-studio-tv/LinuxJS/assets/62482747/42f28ccf-f220-4c31-99de-b7b9eeff8250)
@@ -101,22 +102,24 @@ term.onKey(event => {
 // os.env contains global default environment variables, that are applied everywhere:
 os.env.PATH += ":/custom/path"
 
-// We can get environment variables of a specific process with "env":
+// We can also get global environment variables with "env":
 let variables = await os.exec("env")
 
 // And of course, we can use export:
 await os.exec("export MY_VARIABLE=value")
+
+// To get local variables (eg. of a bash instance or any other proccess), you can use proccess.env or just "env" from within a JS program.
 ```
 ### File System:
 ```js
 /*
-  Note: the filesystem works with UNIX symlinks (relative to the vfs!),
-  and is cross-compatible - you can export a .zip file of any directory,
+  Note: the filesystem works with UNIX symlinks (relative to the vfs!).
+  You can export a .zip file of any directory,
   and import a .zip file from your real filesystem to the virtual one.
 */
 
 
-// Reading is similar to Node.JS 
+// Reading using the JS API is similar to Node.JS 
 await os.fs.read("/bin/ls", "utf8")
 
 // Writing files
@@ -129,14 +132,14 @@ if(os.fs.exists("/bin") && os.fs.isDirectory("/bin")){
   )
 }
 
-// Path parsing is quite dynamic:
+// Path parsing is dynamic, same way as in Linux:
 os.fs.exists("//bin//") // true
 os.fs.exists("./bin") // true
 os.fs.exists("/etc/../bin") // true
 ```
 ### Making JavaScript 'commands':
 ```js
-// Some special shebangs are included by default, like "#! /bin/js" for JavaScript.
+// Some special "shebangs" are included by default, like "#! /bin/js" for JavaScript.
 
 let content = `#! /bin/js
 
