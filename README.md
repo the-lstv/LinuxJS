@@ -18,7 +18,7 @@ BUT, also note that this is not just any simple "simulator" - the goal is to hav
 I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
 It also has some practical uses, thanks to its posibilities!
 
-Its accuracy and ability to execute bash can be confirmed/tested by running the original, unmodified neofetch command, straight from the oficial neofetch repo! Yes, all that made in JS!<br>
+Its accuracy and ability to execute bash can be confirmed/tested by running the original, unmodified neofetch command, straight from the oficial neofetch repo! Yes, all that can be done with just pure JS!<br>
 In the provided default image, neofetch is already included so you can run it straight away (and also available via the package manager).<br>
 But if you don't believe me, just take neofetch from your own /bin/neofetch and put it in a LinuxJS /bin/neofetch - and see the magic!
 
