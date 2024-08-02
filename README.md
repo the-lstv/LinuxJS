@@ -18,6 +18,10 @@ BUT, also note that this is not just any simple "simulator" - the goal is to hav
 I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
 It also has some practical uses, thanks to its posibilities!
 
+Its accuracy and ability to execute bash can be confirmed/tested by running the original, unmodified neofetch command, straight from the oficial neofetch repo! Yes, all that made in JS!<br>
+In the provided default image, neofetch is already included so you can run it straight away (and also available via the package manager).<br>
+But if you don't believe me, just take neofetch from your own /bin/neofetch and put it in a LinuxJS /bin/neofetch - and see the magic!
+
 ---
 
 **Current version:** 0.2.59<br>
@@ -103,7 +107,9 @@ term.onKey(event => {
   // alternatively: bash.std.input(event.key)
 })
 ```
-![image](https://github.com/lukas-studio-tv/LinuxJS/assets/62482747/42f28ccf-f220-4c31-99de-b7b9eeff8250)
+
+![Screenshot from 2024-08-02 22-54-49](https://github.com/user-attachments/assets/ab3e7c4c-b3f0-48f1-8f47-352d03ddc34c)
+<!-- ![image](https://github.com/lukas-studio-tv/LinuxJS/assets/62482747/42f28ccf-f220-4c31-99de-b7b9eeff8250) -->
 
 ### Environment variables:
 ```js
