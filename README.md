@@ -6,19 +6,27 @@
 
 > ### "Imagine being able to emulate a full Linux-like environment on any website/application, for any purpose of any scale, from just a simple, tiny library, with almost no overhead."
 
-LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript.<br>
+LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript as closely as possible.<br>
 Its lightweight (just about 15Kb uncompressed!), fast, and licensed under the GPL 3.0 license.
 
 ---
 
-Please note that this is not a virtual machine or any kind of hardware/bytecode emulation.<br>
-The system is entirely in vanilla JavaScript - most has been rewritten, little of the code is taken from the actual kernel or its parts.<br>
-Tho, also note that this is not just a "simulator" - the goal is to have a somewhat cross-compatible and functional environment, which emulates a real Linux machine as closely as possible.
+Please note that this is not hardware/bytecode emulation.<br>
+The system is running entirely in vanilla JavaScript - most parts have been rewritten, not much of the code is taken from the actual kernel or its components.<br>
+BUT, also note that this is not just any simple "simulator" - the goal is to have a somewhat cross-compatible and functional environment, which emulates a real Linux machine as closely as possible.
+
+I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
+It also has some practical uses, thanks to its posibilities!
 
 ---
 
 **Current version:** 0.2.59<br>
-- Interactive demo is comming soon!
+## Demo
+Wanna see it in action? Simply SSH into `LinuxJS-Demo@extragon.cloud` with the password `linuxjs` and see for yourself!<br>
+Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
+![Screenshot from 2024-08-02 22-45-15](https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37)
+
+(Note: All files in the demo are only in-memory, once you end the session everything will be lost. Go ahead, try the `rm -rf /` :D)
 
 ## Features
 
