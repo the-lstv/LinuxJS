@@ -33,6 +33,8 @@ process.stdin.setEncoding('utf8');
     let os;
 
     try {
+        // The __dirname seems to fix a weird bug that happens when running from a profile.d script.
+
         os = await LinuxJS({
             image: fs.readFileSync(__dirname + "/../images/base_os.img"),
         })
@@ -70,3 +72,18 @@ process.stdin.setEncoding('utf8');
         bash.std.in = data.toString()
     })
 })()
+
+
+
+
+/*
+
+If you are wondering how the SSH demo works, its kinda like this:
+
+if [[ "$USER" = "LinuxJS-Demo" ]]; then
+    node /www/proj/LinuxJS/demo/nodejs-demo
+    exit
+fi
+
+
+*/
