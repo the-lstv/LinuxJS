@@ -27,8 +27,8 @@ process.stdin.setEncoding('utf8');
 (async () => {
 
     // Prevent development yapping
-    console.log = () => {}; 
-    console.warn = () => {};
+    // console.log = () => {}; 
+    // console.warn = () => {};
 
     let os;
 
