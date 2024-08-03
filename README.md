@@ -51,12 +51,13 @@ Its almost hard to believe that the system is not an actual Linux machine at all
 | 💻 Shell Script | ⚠ Partial |
 | 💻 Node.JS emulation, port builtin modules | ⚠ Partial |
 | 💻 PATH variable, run custom scripts, lib64, usr/bin | ✔ Implemented |
+| 📝 usr | ⚠ Partial |
 | 📝 Common commands (ls, cd, pwd, mkdir, rm, ...) | ⚠ Partial |
 | 👥 User Management, passwd | 🛠 Planned |
 | 👤 User Permissions | 🛠 Planned |
 | 📦 Package Management | 🛠 Planned |
 | 🖥 Graphical User Interface | ⚠ Partial |
-| 🌐 Networking Stack | ⚠ Partial (Has curl, but needs custom protocols) |
+| 🌐 Networking Stack | ⚠ Partial (Has curl, but needs custom protocols and direct network access) |
 | 🎗️ systemd | 🛠 Planned |
 | <a href="#alternative-shells-languages-environments">**More languages, shells, environments >**</a> |
 
