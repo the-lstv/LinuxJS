@@ -27,8 +27,8 @@ process.stdin.setEncoding('utf8');
 (async () => {
 
     // Prevent development yapping
-    // console.log = () => {}; 
-    // console.warn = () => {};
+    console.log = () => {};
+    console.warn = () => {};
 
     let os;
 
@@ -39,7 +39,7 @@ process.stdin.setEncoding('utf8');
     } catch (error) {
         if(error.toString().startsWith("JSZip")){
             console.error("Cannot find required module 'jszip', please install jszip to be able to run this script.");
-        }
+        } else console.error(error);
 
         process.exit()
     }
