@@ -4,27 +4,32 @@
 
 # LinuxJS
 
-> ### "Imagine being able to emulate a full Linux-like environment on any website/application, for any purpose of any scale, from just a simple, tiny library, with almost no overhead."
+> ### "Imagine being able to emulate a full Linux-like environment in any website/application, for any purpose of any scale, from just a simple, tiny library, with no extra overhead"
 
-LinuxJS is a project that emulates an entire UNIX-like Linux environment in vanilla browser JavaScript as closely as possible.<br>
-Its lightweight (just about 15Kb uncompressed!), fast, and licensed under the GPL 3.0 license.
+LinuxJS is a project that emulates an entire Linux environment in vanilla JavaScript as closely as possible.<br>
+Its lightweight (just about 15Kb uncompressed!), fast, and licensed under the GPL 3.0 license.<br>
+LinuxJS runs in both browser and Node.JS environments with no changes or bundling necessary.
 
 ---
 
-Please note that this is not hardware/bytecode emulation.<br>
-The system is running entirely in vanilla JavaScript - most parts have been rewritten, not much of the code is taken from the actual kernel or its components.<br>
-BUT, also note that this is not just any simple "simulator" - the goal is to have a somewhat cross-compatible and functional environment, which emulates a real Linux machine as closely as possible.
+Note that this is not hardware/bytecode emulation.<br>
+The system is rewritten entirely in vanilla JavaScript. You could say that this is a "port" of Linux into JavaScript.<br>
+BUT, also note that this is not just any simple "simulator" - the goal is to have a cross-compatible and fully functional environment, which emulates a real Linux machine as closely as possible.
 
 I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
-It also has some practical uses, thanks to its posibilities!
+It also has some practical uses!!
 
-Its accuracy and ability to execute bash can be confirmed/tested by running the original, unmodified neofetch command, straight from the oficial neofetch repo! Yes, all that can be done with just pure JS!<br>
+Its accuracy and ability to execute bash can be confirmed/benchmarked by running the original, unmodified neofetch command, straight from the oficial neofetch repo!<br>
+Yes, all that can be done with just pure JS!<br>
 In the provided default image, neofetch is already included so you can run it straight away (and also available via the package manager).<br>
-But if you don't believe me, just take neofetch from your own /bin/neofetch and put it in a LinuxJS /bin/neofetch - and see the magic!
+But if you don't believe me, just take neofetch from your own /bin/neofetch and put it in a LinuxJS /bin/neofetch - and see the magic!<br><br>
+
+The LinuxJS.js file is only a library that provides filesystem and stdio APIs - everything about the system itself, including the bash, is entirely inside the system image, which is built to precisely follow the structure of the GNU+Linux system, as much as it can.<br>
+This means that they are somewhat compatible and if the executables weren't JavaScript, then the image could very well be an actual Linux distro (well, without the actual operating system and kernel).
 
 ---
 
-**Current version:** 0.2.59<br>
+**Current version:** 0.3<br>
 ## Demo
 Wanna see it in action? Simply SSH into `LinuxJS-Demo@extragon.cloud` with the password `linuxjs` and see for yourself!<br>
 Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
@@ -67,9 +72,20 @@ Feel free to contribute by fixing bugs, implementing new features, or suggesting
 // You can simply use the default one provided in this repo which contains all the basics, or you can create your own.
 // In the future there may be some alternative ways to provide storage access, including passthrough options.
 
-LinuxJS.remoteImage("./images/base_os.img", image => {
-  let os = new LinuxJS({ image });
+LinuxJS.remoteImage("./images/base_os.img", async image => {
+  let os = await LinuxJS({ image });
+
+  await os.boot(); // Start the boot sequence, run startup commands etc.
+  // You can get system logs by doing os.std.on("out", data => ...)
 })
+
+// --- OR (Node.JS) ---
+
+let os = await LinuxJS({
+  image: fs.readFileSync("./images/base_os.img")
+})
+
+await os.boot();
 ```
 ### Running a simple process:
 ```js
