@@ -1,0 +1,7 @@
+#! /bin/js
+
+let fs = os.fs;
+
+std.out = fs.ls(args[0] || pwd).join(" ")
+
+return 0

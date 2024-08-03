@@ -1,0 +1,389 @@
+#! /bin/js
+
+
+let isInteractive = args.includes("-i"),
+
+    commandHistory = [],
+    currentCommand = "",
+
+    terminal_prefix = `[${getVariable("USER")}@${(global.location && location.hostname) || (global.process && global.process.env.HOSTNAME) || "localhost"}]# `,
+
+    historyIndex = 0,
+
+    cursorPosition = 0,
+
+    passthrough = false,
+    target = null
+;
+
+let functions = {};
+
+function getVariable(name){
+    return env[name] || os.env[name]
+}
+
+function replacePlaceholders(str) {
+    return str.replace(/\$(\w+)/g, (match, key) => {
+        return getVariable(key) || match;
+    })
+}
+
+function parseBash(code){
+    // Tokenizer
+
+    let flags = {string: false}, token = "", line = [], lines = [];
+
+    for(let char of (code + " ").split("")){
+
+        if(flags.comment && char !== "\n") continue;
+
+        if(flags.string){
+            if(char === flags.string){
+                flags.string = false
+                line.push(token)
+                token = ""
+                continue
+            }
+
+            token += char
+            continue
+        }
+
+        if(char === "'" || char === '"'){
+            flags.string = char
+            continue
+        }
+
+        if(char === "#"){
+            flags.comment = true
+            continue
+        }
+
+        if(line.length < 1 && char === "="){
+            flags.set_variable = token
+            token = ""
+            continue
+        }
+
+        if(char === " " || char === "\n"){
+
+            if(flags.set_variable){
+                line.push({type: "set", key: flags.set_variable, value: token})
+
+                flags.set_variable = null
+            } else {
+                if(token) line.push(token)
+            }
+
+            token = ""
+
+            if(char === "\n") {
+                // break sentence
+                lines.push(line)
+                line = []
+            }
+
+            continue
+        }
+
+        token += char
+    }
+
+    if(token) line.push(token)
+    if(line.length) lines.push(line)
+
+    return lines
+}
+
+async function executeShellCommand(input){
+    // Execute commands from the shell
+
+    std.write('\r\n');
+
+    if (input && commandHistory.at(-1) !== input) commandHistory.push(input); // Add command to history
+    historyIndex = commandHistory.length; // Reset history index
+
+    await executeBash(input)
+}
+
+let operators = ["|", "&&", ">", "<", ">>", "<<"]
+
+async function executeBash(input) {
+
+    let parsed = parseBash(currentCommand)
+
+    currentCommand = ""
+
+    passthrough = true
+
+    for(let line of parsed){
+
+        if(line[0] == "exit"){
+            exit(0)
+            return
+        }
+
+        let i = -1, flags = {operator: null}, arguments = [], command = null;
+
+        for(let token of line){
+            i++;
+
+            console.log(token);
+
+            if(typeof token === "object"){
+                switch(token.type){
+                    case "set":
+                        env[token.key] = replacePlaceholders(token.value)
+                        break;
+                }
+                continue
+            }
+
+            if(!command) {
+                command = token
+            } else {
+                arguments.push(token)
+            }
+
+            if(operators.includes(token)) flags.operator = token;
+
+            if(operators.includes(token) || i === line.length - 1) {
+
+                if(token === "|"){
+                    flags.pipe = [command, arguments]
+                    command = null
+                    arguments = []
+                    continue
+                }
+
+                await new Promise(resolve => {
+                    target = os.process(command, pwd, arguments.map(argument => replacePlaceholders(argument)), {    
+                        onstdout(data){
+                            std.write(data)
+                        },
+                        
+                        onstderr(data){
+                            console.log(data);
+                            std.write(data)
+                        },
+                
+                        onexit(code){
+                            passthrough = false
+                            resolve()
+                        },
+
+                        env
+                    })
+                })
+
+                command = null
+                arguments = []
+            }
+        }
+        
+    }
+
+    passthrough = false;
+
+    if(isInteractive) printShellPrompt('\r\n'); else exit(0);
+}
+
+// Print printShellPrompt
+function printShellPrompt (prepend = "", append = "") {
+
+    // TODO: Add users etc etc etc
+
+    cursorPosition = 0
+    std.write(prepend + '\r' + terminal_prefix + append);
+}
+
+function clearLine(prepend = "", append = ""){
+    return printShellPrompt(prepend + '\x1b[2K', append)
+}
+
+
+if(isInteractive){
+    if(os.fs.exists("/etc/motd")){
+        std.write((await os.fs.read("/etc/motd", "utf8")).replace(/\n/g, '\r\n') + "\n\r[0m")
+    }
+
+
+
+    // Interactive shell:
+
+
+    function remove(back = false){
+        if(cursorPosition > 0){
+            std.write((back? "" : '\b') + '\x1B[1P');
+
+            currentCommand = currentCommand.substring(0, Math.max(0, cursorPosition - (back? 0: 1))) + currentCommand.substring(cursorPosition + (back? 1: 0));
+
+            console.log(currentCommand);
+
+            if(!back) cursorPosition--
+        }
+    }
+
+    function move(toRight, amount = 1){
+
+        amount = toRight? Math.min(currentCommand.length - cursorPosition, amount): Math.min(cursorPosition, amount);
+
+        console.log(amount);
+
+        if(toRight? ((cursorPosition + amount) > currentCommand.length): ((cursorPosition - amount) < 0)) return; else {
+            cursorPosition += toRight? amount: amount * -1;
+
+            std.write((toRight? "\x1b[1C": "\b").repeat(Math.max(0, amount)))
+        }
+
+    }
+    
+    std.on("stdin", input => {
+        console.log("INPUT >", input);
+
+        if(passthrough){
+            if(input === "\x03"){
+                if(target && target.std){
+                    target.terminate()
+                    console.log("Proccess ended");
+                }
+
+                return
+            }
+
+            if(target && target.std){
+                target.std.in = input
+            }
+
+            return
+        }
+    
+        let replacement;
+
+        let flag_escapecode = null, escapecode;
+
+        for(let char of input.split("")){
+
+            if(flag_escapecode){
+                escapecode += char;
+                
+                if(flag_escapecode === "\x1B" && !/[0-9;[]/.test(char)){ // FIXME: Proper escape code parsing
+    
+                    let code = flag_escapecode;
+                    flag_escapecode = false;
+
+                    console.log("Got escape code", code, escapecode);
+
+                    if (code === "\x1B") switch(escapecode){
+                        case "[A": // Up
+
+                            historyIndex--
+                            if(historyIndex < 0) historyIndex = 0;
+                
+                            currentCommand = replacement = commandHistory[historyIndex] || "";
+                
+                            clearLine("", replacement + `\x1B[${replacement.length + terminal_prefix.length + 1}G`)
+                
+                            cursorPosition = replacement.length;
+                
+                            break;
+                
+                        case "[B": // Down
+                
+                            historyIndex++
+                            if(historyIndex > commandHistory.length - 1) {
+                                historyIndex = commandHistory.length
+                                return clearLine()
+                            }
+                
+                            currentCommand = replacement = commandHistory[historyIndex] || "";
+                
+                            clearLine("", replacement + `\x1B[${replacement.length + terminal_prefix.length + 1}G`)
+                
+                            cursorPosition = replacement.length;
+                            break;
+                
+                                            
+                        case "[C": // Right
+                            move(true)
+                            break;
+
+                        case "[D": // Left
+                            move(false)
+                            break;
+
+                        case "[1;5C": // Ctrl + Right
+                            let match = currentCommand.substring(cursorPosition).match(/^\s*\w+/);
+
+                            move(true, match? match[0].length: currentCommand.length)
+                            break;
+
+                        case "[1;5D": // Ctrl + Left
+
+                            let leftSide = currentCommand.substring(0, cursorPosition);
+
+                            let matches = [...leftSide.matchAll(/\b\w+/g)];
+
+                            move(false, matches.length !== 0? leftSide.length - matches.at(-1).index: leftSide.length)
+                            break;
+
+                        case "[3~": // Delete
+                            remove(true)
+                            break;
+                    }
+                }
+
+                continue
+            }
+
+            switch (char) {
+                case "\x01": // CTRL-A
+                    std.write("\b".repeat(Math.max(0, cursorPosition)));
+                    cursorPosition = 0
+                    break;
+
+                case "\x03": // CTRL-C
+                    printShellPrompt("\n")
+                    currentCommand = ""
+                    cursorPosition = 0
+                    break;
+
+                case "\r": // Enter
+                    executeShellCommand(currentCommand);
+                    currentCommand = ""
+                    cursorPosition = 0
+                    break;
+        
+                case "\x7F": // Backspace
+                    remove(false)
+                    break;
+
+                case "\x1B":
+                    flag_escapecode = char;
+                    escapecode = "";
+                    break;
+            
+                default:
+                    if(!/[\x00-\x1F\x7F-\x9F]/g.test(char)) {
+
+                        let rightSide = currentCommand.substring(cursorPosition);
+
+                        currentCommand = currentCommand.substring(0, cursorPosition) + char + rightSide;
+
+                        if(rightSide) std.write(char + rightSide + "\b".repeat(Math.max(0, rightSide.length))); else std.write(char);
+
+                        cursorPosition++
+                    }
+                    
+                    break;
+            }
+        }
+    
+    })
+
+
+    // Initial prompt
+    printShellPrompt()
+} else {
+    // Todo: Launch a file
+}

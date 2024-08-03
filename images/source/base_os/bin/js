@@ -1,0 +1,4 @@
+#! /bin/bash
+
+echo "You should not run this file directly. The JavaScript interpreter is built-in and hardcoded as a part of the environment."
+exit 1

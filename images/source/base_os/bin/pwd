@@ -1,0 +1,5 @@
+#! /bin/js
+
+std.out = pwd
+
+exit()

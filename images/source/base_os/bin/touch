@@ -1,0 +1,16 @@
+#! /bin/js
+
+let fs = os.fs;
+
+for(let file of args){
+
+    file = fs.resolve(file, pwd);
+
+    let handle = fs.get(file);
+
+    if(!handle){
+        fs.write(file, "")
+    }
+}
+
+exit()

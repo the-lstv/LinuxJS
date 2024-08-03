@@ -67,7 +67,7 @@ Feel free to contribute by fixing bugs, implementing new features, or suggesting
 // You can simply use the default one provided in this repo which contains all the basics, or you can create your own.
 // In the future there may be some alternative ways to provide storage access, including passthrough options.
 
-LinuxJS.remoteImage("./image.bin", image => {
+LinuxJS.remoteImage("./images/base_os.img", image => {
   let os = new LinuxJS({ image });
 })
 ```
