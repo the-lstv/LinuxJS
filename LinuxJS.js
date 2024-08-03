@@ -30,7 +30,11 @@
 
     
         // Allows patches with multiple images/packages
-        if(!Array.isArray(options.image)) options.image = [];
+        if(!Array.isArray(options.image)) options.image = [options.image];
+
+        if(options.image.length < 1){
+            throw "You must include at least one system image/patch!"
+        }
 
         for(let image of options.image){
             if(!image instanceof ArrayBuffer) throw "System image must an arrayBuffer.";
