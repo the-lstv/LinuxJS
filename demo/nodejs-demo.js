@@ -33,9 +33,8 @@ process.stdin.setEncoding('utf8');
     let os;
 
     try {
-        console.error(__dirname);
         os = await LinuxJS({
-            image: fs.readFileSync("../images/base_os.img"),
+            image: fs.readFileSync(__dirname + "/../images/base_os.img"),
         })
     } catch (error) {
         if(error.toString().startsWith("JSZip")){
