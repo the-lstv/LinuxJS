@@ -4,7 +4,7 @@
 
 # LinuxJS
 
-> ### "Imagine being able to emulate a full Linux-like environment in any website/application, for any purpose of any scale, from just a simple, tiny library, with no extra overhead"
+> ### "Imagine being able to emulate a fully functional Linux-like environment anywhere, on any website/application from just a simple, tiny library, with minimal overhead."
 
 LinuxJS is a project that emulates an entire Linux environment in vanilla JavaScript as closely as possible.<br>
 Its lightweight (just about 15Kb uncompressed!), fast, and licensed under the GPL 3.0 license.<br>
@@ -12,12 +12,12 @@ LinuxJS runs in both browser and Node.JS environments with no changes or bundlin
 
 ---
 
-Note that this is not hardware/bytecode emulation.<br>
-The system is rewritten entirely in vanilla JavaScript. You could say that this is a "port" of Linux into JavaScript.<br>
-BUT, also note that this is not just any simple "simulator" - the goal is to have a cross-compatible and fully functional environment, which emulates a real Linux machine as closely as possible.
+Note that this is not hardware/bytecode/kernel emulation.<br>
+The system is rewritten entirely in vanilla JavaScript. You could say that this is a ""port"" of Linux into JavaScript.<br>
+BUT, also note that this is not just any simple "simulator" - the goal is to have a fully functional environment which follows Linux behaviour as closely as possible with the same results, down to the tiny details.
 
 I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
-It also has some practical uses!!
+It also has some practical uses, making it even more unique!
 
 Its accuracy and ability to execute bash can be confirmed/benchmarked by running the original, unmodified neofetch command, straight from the oficial neofetch repo!<br>
 Yes, all that can be done with just pure JS!<br>
@@ -30,10 +30,10 @@ This means that they are somewhat compatible and if the executables weren't Java
 ---
 
 **Current version:** 0.3<br>
-## Demo
+## Quick demo
 Wanna see it in action? Simply SSH into `LinuxJS-Demo@extragon.cloud` with the password `linuxjs` and see for yourself!<br>
 Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
-![Screenshot from 2024-08-02 22-45-15](https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37)
+<img src="https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37" width="400">
 
 (Note: All files in the demo are only in-memory, once you end the session everything will be lost. Go ahead, try the `rm -rf /` :D)
 
@@ -42,22 +42,22 @@ Its almost hard to believe that the system is not an actual Linux machine at all
 
 | Feature                      | Status       |
 |------------------------------|--------------|
-| 📁 Virtual File System | ✔ Implemented |
-| 📁 Advanced File System (mountpoints, symlinks..) | ⚠ Partial |
+| 📁 File System (incl. virtual fs, mountpoints, symlinks) | ✔ Implemented |
 | 🕹️ JavaScript API | ✔ Implemented |
-| 🔮 Process + stdio emulation | ✔ Implemented |
-| 💻 Compatible with terminal emulators | ✔ Implemented |
+| 🔮 Processes, stdio emulation | ✔ Implemented (needs work) |
+| 💻 Compatible with all standard terminal emulators | ✔ Working |
 | 💻 Bash Shell | ✔ Implemented |
 | 💻 Shell Script | ⚠ Partial |
+| 📝 Ports of GNU Coreutil commands + common commands | ⚠ Partial (incomplete) |
+| 📝 usr/* | ⚠ Partial |
+| 📝 /dev, /proc | 🛠 Planned |
 | 💻 Node.JS emulation, port builtin modules | ⚠ Partial |
-| 💻 PATH variable, run custom scripts, lib64, usr/bin | ✔ Implemented |
-| 📝 usr | ⚠ Partial |
-| 📝 Common commands (ls, cd, pwd, mkdir, rm, ...) | ⚠ Partial |
+| 💻 Environment variables (+ search variable), executables, special UNIX perms | ✔ Implemented |
 | 👥 User Management, passwd | 🛠 Planned |
-| 👤 User Permissions | 🛠 Planned |
+| 👤 File Permissions | 🛠 Planned |
 | 📦 Package Management | 🛠 Planned |
-| 🖥 Graphical User Interface | ⚠ Partial |
-| 🌐 Networking Stack | ⚠ Partial (Has curl, but needs custom protocols and direct network access) |
+| 🖥 Graphical User Interface | ⚠ Partial (Currently only via web interfaces like FOSSHome) |
+| 🌐 Networking Stack | ⚠ Partial (Can perform HTTP requests, but needs direct network access) |
 | 🎗️ systemd | 🛠 Planned |
 | <a href="#alternative-shells-languages-environments">**More languages, shells, environments >**</a> |
 
@@ -100,6 +100,17 @@ os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
 // Async variant (stores stdout in a buffer, waits for exit, returns the buffer)
 console.log( await os.exec("ls -R") )
 ```
+
+### Terminating a process:
+```js
+let myProcess = await os.process("ls", null, ["-R"], {})
+
+setTimeout(myProcess.terminate, 2000)
+```
+![Group 310](https://github.com/user-attachments/assets/5574c22d-d516-4f4d-9068-e14b24e3ff9f)<br>
+Since JavaScript threads (such as functions) cannot be "terminated" or stopped on command, "executables" or commands written with JS cannot be reilably stopped. A signal will be sent, but programs that do not obey it will not actually stop. This can have consequences, such as memory leaks, if not handled properly. Make sure to know how to handle such scenarios<br>
+This does not apply to bash/shell script commands, those can abort in execution (unless they call a JS command internally).
+
 ### Attaching an interactive bash shell to a terminal emulator:
 ```js
 // Assuming "term" is a Xterm.JS instance
@@ -333,3 +344,21 @@ As LinuxJS is supposed to be actually useful and be able to run real programs, o
   Fetures some cool events, methods, and builtin attributes.
 
   **You do NOT need this if you are using FOSSHome, it is already built-in.** Installing this in FOSSHome will override the builtin behavior, this allows customization but is not recommended. Tho it is fairly simple to change between managers.
+
+
+# Optimization
+
+## Filesystem opertaions
+Each filesystem operation (read, write, stat, list...) does a lot of things before it can even start being performed.<br>
+This includes traversing the path multiple times, looking for the target filesystem, parsing symlinks etc.<br>
+If you need to perform an operation to a file frequently (eg. write), you can pre-compute the file descriptor for faster operations:
+```js
+let handle = await os.fs.getObject("/your/path"), descriptor = handle.fileSystem.getDescriptor(handle.relativePath);
+
+// You can now perform operations with the descriptor directly
+await handle.fileSystem.write(descriptor, "Hello");
+
+// WARNING: The above is not the same as os.fs.write, the fileSystem methods may differ.
+// To use os.fs methods with a descriptor, you will need to wrap it:
+await os.fs.exists(LinuxJS.accessDirectly(descriptor))
+```
