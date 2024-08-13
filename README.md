@@ -166,6 +166,7 @@ await os.exec("export MY_VARIABLE=value")
   and import a .zip file from your real filesystem to the virtual one.
 */
 
+// WARNING: Breaking change! Since the new filesystem revamp, due to a new path parser, ALL methods are now async and need to be awaited. This is because symlinks are files and have to be read in order to be resolved, and that can only be done with async/await.
 
 // Reading using the JS API is similar to Node.JS 
 await os.fs.read("/bin/ls", "utf8")
@@ -174,9 +175,9 @@ await os.fs.read("/bin/ls", "utf8")
 os.fs.write("/bin/hello", "#! /bin/js \n std.out = 'hello world'")
 
 // Checks if /bin exists and is a directory, then lists its contents
-if(os.fs.exists("/bin") && os.fs.isDirectory("/bin")){
+if(await os.fs.exists("/bin") && await os.fs.isDirectory("/bin")){
   console.log(
-    os.fs.ls("/bin")
+    await os.fs.ls("/bin")
   )
 }
 
@@ -192,14 +193,14 @@ os.fs.exists("/etc/../bin") // true
 os.fs.exists("/bin/") // true (/bin is a symlink to /usr/bin in the default image)
 
 // Registering a custom virtual system:
-fs.register_filesystem("MyFileSystemName", MyFileSystemClass);
+os.fs.register_filesystem("MyFileSystemName", MyFileSystemClass);
 
 // Mounting a filesystem:
-await fs.mkdir("/mountpoint")
+await os.fs.mkdir("/mountpoint")
 os.fs.mount("/mountpoint", "MyFileSystemName", "DeviceName")
 
 // Example: Adding an extra JSZip instance for separate files:
-await fs.mkdir("/home/data")
+await os.fs.mkdir("/home/data")
 os.fs.mount("/home/data", "JSZipFS", new JSZip)
 ```
 ### Making JavaScript 'commands':
