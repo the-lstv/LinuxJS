@@ -1,5 +1,0 @@
-#! /bin/js
-
-std.out = '\x1B[2J\x1B[0f';
-
-exit()

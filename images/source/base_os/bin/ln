@@ -1,9 +1,0 @@
-#! /bin/js
-
-let fs = os.fs;
-
-if(args.length < 1) {
-    
-}
-
-exit()

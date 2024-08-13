@@ -1,5 +1,0 @@
-#! /bin/js
-
-std.out = os.std.out
-
-exit()

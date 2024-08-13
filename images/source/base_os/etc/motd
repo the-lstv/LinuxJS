@@ -1,9 +1,0 @@
-[1m[90m< [97mWelcome to [33mLinux[93mJS[97m (v1.0) [90m>[0m
-
-[1m[93mQuick tips:[0m
-[33m•[0m List default commands: [1m"ls /bin"[0m
-[33m•[0m Builtin package manager: [1m"pkg"[0m
-[33m•[0m Neofetch is preinstalled 😉[0m
-
-[90mYou can edit this message in [4m[97m/etc/motd
-[0m

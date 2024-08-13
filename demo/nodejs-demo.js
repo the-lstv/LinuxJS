@@ -49,7 +49,7 @@ process.stdin.setEncoding('utf8');
     // Add the demo message
     os.fs.write("/etc/motd", await os.fs.read("/etc/motd", "utf8") + "\n\x1b[1mWelcome, user! Thanks for trying out the public LinuxJS SSH Demo.\x1b[0m\nThis is not a real Linux environment!\nEverything you see or do here (including the shell) is all handled by a single JS library.\nAll files are temporary (including the system) and after you log-out, they will be lost forever.\nMore about the library: https://github.com/the-lstv/LinuxJS\n\n")
 
-    // await os.boot();
+    await os.boot();
 
     // Push stdout of the bash process to the output
     let bash = os.process('bash', null, ["-i"], {

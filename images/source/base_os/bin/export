@@ -1,9 +1,0 @@
-#! /bin/js
-
-for(let env of args){
-    env = env.split("=");
-
-    os.env[env[0]] = env[1]
-}
-
-exit()

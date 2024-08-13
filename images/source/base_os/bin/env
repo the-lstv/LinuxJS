@@ -1,5 +1,0 @@
-#! /bin/js
-
-std.out = Object.keys(os.env).map(key => `${key}=${os.env[key]}`).join("\n\r")
-
-exit()
