@@ -87,6 +87,12 @@ let os = await LinuxJS({
 })
 
 await os.boot();
+
+
+// Reusing/sharing root storage or using own JSZip instances (not recommended, but is possible)
+let disk = new JSZip; // Make sure it contains all the files you need
+
+let os = await LinuxJS({ disk })
 ```
 ### Running a simple process:
 ```js
@@ -174,10 +180,27 @@ if(os.fs.exists("/bin") && os.fs.isDirectory("/bin")){
   )
 }
 
-// Path parsing is dynamic, same way as in Linux:
-os.fs.exists("//bin//") // true
-os.fs.exists("./bin") // true
+// Path searching
+await os.fs.search("bash", os.env.PATH) // search the PATH variable for "bash"
+
+// Path parsing is the same as in UNIX-like operating systems:
+os.fs.exists("//usr//bin//") // true
+os.fs.exists("./usr/bin", "/") // true (relative to "/")
 os.fs.exists("/etc/../bin") // true
+
+// Symlinks also work the same way, and are fully compatible with real symlinks!
+os.fs.exists("/bin/") // true (/bin is a symlink to /usr/bin in the default image)
+
+// Registering a custom virtual system:
+fs.register_filesystem("MyFileSystemName", MyFileSystemClass);
+
+// Mounting a filesystem:
+await fs.mkdir("/mountpoint")
+os.fs.mount("/mountpoint", "MyFileSystemName", "DeviceName")
+
+// Example: Adding an extra JSZip instance for separate files:
+await fs.mkdir("/home/data")
+os.fs.mount("/home/data", "JSZipFS", new JSZip)
 ```
 ### Making JavaScript 'commands':
 ```js
