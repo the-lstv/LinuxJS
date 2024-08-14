@@ -113,7 +113,7 @@ let myProcess = await os.process("ls", null, ["-R"], {})
 
 setTimeout(myProcess.terminate, 2000)
 ```
-![Group 310](https://github.com/user-attachments/assets/5574c22d-d516-4f4d-9068-e14b24e3ff9f)<br>
+<img src="https://github.com/user-attachments/assets/5574c22d-d516-4f4d-9068-e14b24e3ff9f" width="120"><br>
 Since JavaScript threads (such as functions) cannot be "terminated" or stopped on command, "executables" or commands written with JS cannot be reilably stopped. A signal will be sent, but programs that do not obey it will not actually stop. This can have consequences, such as memory leaks, if not handled properly. Make sure to know how to handle such scenarios<br>
 This does not apply to bash/shell script commands, those can abort in execution (unless they call a JS command internally).
 
