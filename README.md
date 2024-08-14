@@ -136,9 +136,9 @@ let bash = os.process("bash", "~", ["-i"], {
   }
 })
 
-term.onKey(event => {
-  bash.std.in = event.key // Pushes the key into the standard input
-  // alternatively: bash.std.input(event.key)
+term.onData(data => {
+  bash.std.in = data // Pushes the data into the standard input
+  // alternatively: bash.std.input(data)
 })
 ```
 
