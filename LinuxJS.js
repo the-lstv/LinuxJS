@@ -55,6 +55,8 @@
 
         // Init the "os" object;
 
+        let encoder = new TextEncoder;
+
         os = {
             get _bootComplete() {
                 return _bootComplete
@@ -126,27 +128,33 @@
                 let thing = (_this => class Process {
                     constructor(){
                         _this = this;
-                        this.options = options
+                        this.options = options;
+                        this.pid = pid;
                     }
 
-                    async prepare(){
+                    async _init_(){
 
-                        this.pid = pid;
-            
+                        /*
+                            This function just looks for where the binary/script are located and prepares the procces for launch.
+                            Normally this should be a part of the constructor, but it is not because it requires "await" due to filesystem operations.
+                        */
+
+                        if(prepared) throw "Cannot call ._init_() twice!";
+
                         executable = "/" + os.fs.normalizePath(await os.fs.search(os.env.PATH, executable));
-            
+
                         let executable_path = "/" + executable.split("/").filter(garbage => garbage).slice(0, -1).join("/") + "/";
             
                         let object = await os.fs.getObject(executable, pwd);
                         let descriptor = object.fileSystem.getDescriptor(object.relativePath);
-            
+
                         // Initialize standard input output system
-            
+
                         _this.std = LinuxJS.stdio(options.stdioOptions || {});
                         this.std.onstdin = options.onstdin || null;
                         this.std.onstdout = options.onstdout || null;
                         this.std.onstderr = options.onstderr || null;
-            
+
                         if(!descriptor || descriptor.dir) {
                             let error = !descriptor? "ENOENT" : "EISDIR";
             
@@ -158,74 +166,81 @@
                         }
             
                         if(!pwd) pwd = executable_path;
-            
+
                         this.pwd = "/" + os.fs.normalizePath(pwd + "/");
 
                         this.file_handle = descriptor
                         this.source_exec = executable
                         this.source = executable_path
                         this.args = args
-            
+
                         prepared = true;
-                        if(!options.delay) this.launch()
+                        if(!options.delayStart && !options.delay) this.run()
                     }
-            
-                    launch(){
+
+                    run(){
                         if(!prepared) throw "Process was not prepared yet!";
 
                         return new Promise(async (resolve, reject) => {
-                            let data = await os.fs.read(_this.source_exec, "text"), match;
+                            let data = await os.fs.read(_this.source_exec, "arraybuffer");
             
-                            if(data.startsWith("#!")) match = data.match(/^#!(.*)\n/);
+                            if(new Uint8Array(data.slice(0, 2)).join() === "23,21") {
+
+                                // The executable is a script starting with a "shebang".
+
+                                data = encoder.encode(data)
+
+                                let match = data.match(/^#!(.*)\n/);
+
+                                if(data.startsWith("#!") && match && match[1]){
+                                    const shell = match[1].trim();
+
+                                    data = data.replace(match[0], "");
+                
+                                    switch(shell){
+                                        // Some hard-coded interpreters
+                                        // FIXME: Fix this
+                
+                                        case "/bin/js": case "/usr/bin/js": case "/usr/bin/node": case "/bin/node": case "/usr/bin/env node":
+                                            let std = _this.std,
+                                                pwd = _this.pwd,
+                                                args = _this.args,
+                                                env = _this.options.env || {},
+                                                process = _this,
+                                                code = null
+                                            ;
+                
+                                            function exit(code = 0){
+                                                resolve(code)
             
-                            if(data.startsWith("#!") && match && match[1]){
-                                const shell = match[1].trim();
+                                                _this.terminate(code)
             
-                                data = data.replace(match[0], "");
-            
-                                switch(shell){
-                                    // Some pre-defined virtual interpreters
-            
-                                    case "/bin/js": case "/bin/node": case "/usr/bin/env node":
-                                        let std = _this.std,
-                                            pwd = _this.pwd,
-                                            args = _this.args,
-                                            env = this.options.env || {},
-                                            process = _this,
-                                            code = null
-                                        ;
-            
-                                        function exit(code = 0){
-                                            resolve(code)
-        
-                                            _this.terminate(code)
-        
-                                            // throw new Error(`exit:${code}`)
-                                        }
-            
-                                        let handle = new AsyncFunction('os', 'std', 'args', 'pwd', "process", "exit", "env", "global", data);
-            
-                                        try {
-                                            code = await handle(os, std, args, pwd, process, exit, env, global);
-                                        } catch (error) {
-            
-                                            if(error && typeof error.message == "string" && error.message.startsWith("exit:")) {
-                                                return
+                                                throw `exit:${code}`
                                             }
-            
-                                            _this.std.stderr = error.toString();
-            
-                                        }
-                                    case "/bin/bash":
-                                        // TODO: Add a shellscript interptetter
-                                        break;
-            
-                                    default:
-                                        // TODO: Implement interpreter pass
-                                        break;
+                
+                                            // TODO: Cache functions to boost performance (eliminate the need to re-compile each time)
+                                            let handle = new AsyncFunction('os', 'std', 'args', 'pwd', "process", "exit", "env", "global", data);
+                
+                                            try {
+                                                code = await handle(os, std, args, pwd, process, exit, env, global);
+                                            } catch (error) {
+                
+                                                if(error && typeof error.message == "string" && error.message.startsWith("exit:")) {
+                                                    return
+                                                }
+                
+                                                _this.std.stderr = error.toString();
+
+                                            }
+                
+                                        default:
+                                            // TODO: Implement interpreter pass
+                                            break;
+                                    }
+                                
+                                } else {
+                                    throw "This type of executable is not supported at this moment. (Or, maybe you forgot to specify the target with a shebang (#! ...) ?)"
                                 }
-                            } else {
-                                throw "This type of executable is not supported at this moment. (Or, maybe you forgot to specify the target with a shebang (#! ...) ?)"
                             }
                         })
                     }
@@ -250,7 +265,7 @@
         
                 os.proc[pid] = process;
 
-                await process.prepare()
+                await process._init_()
 
                 return process
             },
