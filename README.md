@@ -83,21 +83,42 @@ LinuxJS.remoteImage("./images/base_os.img", async image => {
 // --- OR (Node.JS) ---
 
 let os = await LinuxJS({
-  image: fs.readFileSync("./images/base_os.img")
+  image: fs.readFileSync("./images/base_os.img"),
+
+  // You can also optionally set the reported device statistics (When running in Node, this defaults to the host machine!)
+  system: {
+    memory: 2048, // Note this is just the reported information, not an actual limit
+    cpu: {
+      vendor: "AuthenticAMD",
+      cores: 12,
+      threadsPerCore: 2,
+      modelName: "AMD Ryzen 9 5900X 12-Core Processor",
+      minHz: 2200,
+      maxHz: 4950
+    },
+    arch: "x86_64",
+    kernelName: "JSLinux",
+    kernelVersion: "6.9.0.x86_64",
+    operatingSystem: "JSGNU/JSLinux"
+  }
 })
 
 await os.boot();
+```
 
-
-// Reusing/sharing root storage or using own JSZip instances (not recommended, but is possible)
-let disk = new JSZip; // Make sure it contains all the files you need
-
+```js
+// It's also possible to reuse/share root storage or use your own JSZip instances (not recommended!)
+let disk = new JSZip; // Make sure it contains all the files you will need
 let os = await LinuxJS({ disk })
 ```
 ### Running a simple process:
+LinuxJS runs processes using either Web Workers (in browsers) or the "isolated-vm" module (in Node.js)
 ```js
 // Run "ls -R" and log the result
 os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
+  // isolation: "default", // Options: default (default), isolated-vm, worker, unsandboxed. Default will use whatever is available from left to right.
+  // Unsandboxed processes have full access to the global scope!! This means that arbitary code could be executed! Be very carefull with this. Unsandboxed processes also cannot be terminated (as they run in the same thread as LinuxJS itself).
+
   onstdout(data){
     console.log(data)
   }
@@ -114,8 +135,7 @@ let myProcess = await os.process("ls", null, ["-R"], {})
 setTimeout(myProcess.terminate, 2000)
 ```
 <img src="https://github.com/user-attachments/assets/5574c22d-d516-4f4d-9068-e14b24e3ff9f" width="120"><br>
-Since JavaScript threads (such as functions) cannot be "terminated" or stopped on command, "executables" or commands written with JS cannot be reilably stopped. A signal will be sent, but programs that do not obey it will not actually stop. This can have consequences, such as memory leaks, if not handled properly. Make sure to know how to handle such scenarios<br>
-This does not apply to bash/shell script commands, those can abort in execution (unless they call a JS command internally).
+Like mentioned above, processes are launched with either Workers or isolated-vm, depending on what is available. Workers are less secure and thus there is a possibility that they could leak out to the global context and possibly do things that they should not be doing (be especially mindful of this when using Node).<br>
 
 ### Attaching an interactive bash shell to a terminal emulator:
 ```js
@@ -385,4 +405,25 @@ await handle.fileSystem.write(descriptor, "Hello");
 // WARNING: The above is not the same as os.fs.write, the fileSystem methods may differ.
 // To use os.fs methods with a descriptor, you will need to wrap it:
 await os.fs.exists(LinuxJS.accessDirectly(descriptor))
+```
+
+## Launching processes
+Launching a process is also a pretty heavy operation - the same path operations apply, then the process has to be initialized, code compiled and so on. You can speed this up significantly if you need to call a specific command/script/"executable" often.
+```js
+// Initiate your process like usual but with the delayStart option to prevent execution
+let executor = await os.process("ls", null, null, { delayStart: true });
+
+// Use this crazy wrapper to get direct access to the runner
+let runner = LinuxJS.ProcessRunnerWrapper(await executor.GetIsolator().preCompile())
+
+// You can now run your process quickly:
+runner.run(["-R"], { // args, options
+  // ... custom options
+})
+
+// And you can do this as many times as you want:
+runner.run([], {})
+
+// Technically to get the maximum performance, you could also set the "isolator" to "unsandboxed", but do NOT do this unless you 120% trust the code and environment.
+// The performance benefit of unsandboxed also depends on how much actual synchronous work the process does - because unsandboxed processes get run in the same global thread, so the performance may actually be worse.
 ```
