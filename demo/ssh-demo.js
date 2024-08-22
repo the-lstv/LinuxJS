@@ -23,18 +23,26 @@ let LinuxJS = require("../LinuxJS"),
 ;
 
 
+// OS image
+const image = fs.readFileSync(__dirname + "/../images/base_os.img");
+
+
 const conn = new Server({
+
     hostKeys: [ require('fs').readFileSync('host.key') ]
+
 }, (client) => {
     console.log('Client connected!');
 
     client.on('authentication', (ctx) => {
+
         if (ctx.method === 'password' && ctx.username === 'root' && ctx.password === 'linuxjs') {
             ctx.accept();
         } else {
             console.log("Rejected connection with method", ctx.method, "and credintals", ctx.username, ctx.password);
             ctx.reject();
         }
+
     }).on('ready', () => {
         console.log('Client authenticated!');
 
@@ -50,7 +58,7 @@ const conn = new Server({
 
                 try {
                     os = await LinuxJS({
-                        image: fs.readFileSync(__dirname + "/../images/base_os.img"),
+                        image,
                     })
                 } catch (error) {
                     if(error.toString().startsWith("JSZip")){
@@ -94,6 +102,7 @@ const conn = new Server({
                 // });
             });
         });
+
     }).on('end', () => {
         console.log('Client disconnected');
     });
@@ -102,6 +111,3 @@ const conn = new Server({
 conn.listen(2022, '0.0.0.0', () => {
     console.log('Listening on port 2022');
 });
-
-// process.stdin.setRawMode(true);
-// process.stdin.setEncoding('utf8');
