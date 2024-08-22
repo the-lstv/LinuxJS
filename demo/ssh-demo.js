@@ -48,10 +48,6 @@ const conn = new Server({
             session.once('shell', async (accept, reject) => {
                 const stream = accept();
 
-                stream.on('data', (data) => {
-                    bash.std.in = data.toString(); // Send data to your virtual shell
-                });
-
                 let os;
 
                 try {
@@ -65,15 +61,16 @@ const conn = new Server({
 
                     process.exit()
                 }
-                
+
                 await os.boot();
 
                 // Add the demo message
-                await os.fs.write("/etc/motd", await os.fs.read("/etc/motd", "utf8") + "\n\x1b[1mWelcome, user! Thanks for trying out the public LinuxJS SSH Demo.\x1b[0m\nThis is not a real Linux environment!\nEverything you see or do here (including the shell) is all handled by a single JS library.\nAll files are temporary (including the system) and after you log-out, they will be lost forever.\nMore about the library: https://github.com/the-lstv/LinuxJS\n\n")
+                os.fs.write("/etc/motd", await os.fs.read("/etc/motd", "utf8") + "\n\x1b[1mWelcome, user! Thanks for trying out the public LinuxJS SSH Demo.\x1b[0m\nThis is not a real Linux environment!\nEverything you see or do here (including the shell) is all handled by a single JS library.\nAll files are temporary (including the system) and after you log-out, they will be lost forever.\nMore about the library: https://github.com/the-lstv/LinuxJS\n\n")
 
                 // Push stdout of the bash process to the output
                 let bash = os.process('bash', null, ["-i"], {
                     onstdout(data){
+                        console.log(data);
                         stream.write(data);
                     },
 
@@ -85,6 +82,10 @@ const conn = new Server({
                         stream.close()
                     }
                 })
+
+                stream.on('data', (data) => {
+                    bash.std.in = data.toString(); // Send data to your virtual shell
+                });
 
                 // stream.on('close', () => {
                 //     bash.terminate();
