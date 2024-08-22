@@ -83,9 +83,8 @@ const conn = new Server({
                     }
                 })
 
-                console.log(os, bash);
-
                 stream.on('data', (data) => {
+                    console.log(data.toString());
                     bash.std.in = data.toString(); // Send data to your virtual shell
                 });
 
