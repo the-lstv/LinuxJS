@@ -95,6 +95,9 @@
                     // Location, filesystem, device
                     fs.mount("/proc", "proc", "proc")
 
+                    // Temporary
+                    resolve()
+
                 })
             },
 
