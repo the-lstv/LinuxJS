@@ -337,11 +337,11 @@
 
         write(path, buffer, permissions){
             // TODO: many things
-            return this.storage.storage.file(path, buffer).files[path]
+            return this.storage.file(path, buffer).files[path]
         }
 
         createFile(path){
-            return this.storage.storage.file(path, "").files[path]
+            return this.storage.file(path, "").files[path]
         }
 
         remove(path){
@@ -349,7 +349,7 @@
         }
 
         mkdir(path){
-            this.storage.storage.file(path, "")
+            this.storage.file(path, "")
         }
 
         list(path, listDir = true, recursive = false, hidden = true){
