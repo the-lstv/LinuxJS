@@ -219,7 +219,7 @@
             
                                                 _this.terminate(code)
             
-                                                throw `exit:${code}`
+                                                // throw `exit:${code}`
                                             }
                 
                                             // TODO: Cache functions to boost performance (eliminate the need to re-compile each time)
