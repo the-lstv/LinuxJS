@@ -51,7 +51,7 @@ process.stdin.setEncoding('utf8');
     await os.boot();
 
     // Push stdout of the bash process to the output
-    let bash = os.process('bash', null, ["-i"], {
+    let bash = await os.process('bash', null, ["-i"], {
         onstdout(data){
             process.stdout.write(data)
         },
