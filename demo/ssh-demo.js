@@ -70,7 +70,7 @@ const conn = new Server({
                 // Push stdout of the bash process to the output
                 let bash = await os.process('bash', null, ["-i"], {
                     onstdout(data){
-                        console.log(data);
+                        console.log("out:", data);
                         stream.write(data);
                     },
 

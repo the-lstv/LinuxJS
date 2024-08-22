@@ -56,6 +56,7 @@
         // Init the "os" object;
 
         let encoder = new TextEncoder;
+        let decoder = new TextDecoder;
 
         os = {
             get _bootComplete() {
@@ -187,15 +188,15 @@
                         return new Promise(async (resolve, reject) => {
                             let data = await os.fs.read(_this.source_exec, "arraybuffer");
             
-                            if(new Uint8Array(data.slice(0, 2)).join() === "23,21") {
+                            if(decoder.decode(data.slice(0, 2)) === "#!") {
 
                                 // The executable is a script starting with a "shebang".
 
-                                data = encoder.encode(data)
+                                data = decoder.decode(data)
 
                                 let match = data.match(/^#!(.*)\n/);
 
-                                if(data.startsWith("#!") && match && match[1]){
+                                if(match && match[1]){
                                     const shell = match[1].trim();
 
                                     data = data.replace(match[0], "");
@@ -242,7 +243,7 @@
                                     }
                                 
                                 } else {
-                                    throw "This type of executable is not supported at this moment. (Or, maybe you forgot to specify the target with a shebang (#! ...) ?)"
+                                    throw "bad interpreter: No such file or directory"
                                 }
                             }
                         })
