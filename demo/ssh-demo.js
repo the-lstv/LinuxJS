@@ -46,8 +46,6 @@ const conn = new Server({
             });
 
             session.once('shell', async (accept, reject) => {
-                const stream = accept();
-
                 let os;
 
                 try {
@@ -59,10 +57,15 @@ const conn = new Server({
                         console.error("Cannot find required module 'jszip', please install jszip to be able to run this script.");
                     } else console.error(error);
 
-                    return stream.close()
+                    return reject()
                 }
 
+                const stream = accept();
+
+                console.log("starting boot");
+
                 await os.boot();
+
                 console.log("boot complete");
 
                 // Add the demo message
