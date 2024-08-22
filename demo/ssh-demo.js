@@ -103,5 +103,5 @@ conn.listen(2022, '0.0.0.0', () => {
     console.log('Listening on port 2022');
 });
 
-process.stdin.setRawMode(true);
-process.stdin.setEncoding('utf8');
+// process.stdin.setRawMode(true);
+// process.stdin.setEncoding('utf8');
