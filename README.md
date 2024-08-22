@@ -31,7 +31,7 @@ This means that they are somewhat compatible and if the executables weren't Java
 
 **Current version:** 0.3<br>
 ## Quick demo
-Wanna see it in action? Simply SSH into `LinuxJS-Demo@extragon.cloud` with the password `linuxjs` and see for yourself!<br>
+Wanna see it in action? Simply SSH into `ssh root@extragon.cloud -p 2022` with the password `linuxjs` and see for yourself!<br>
 Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
 <img src="https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37" width="400">
 
