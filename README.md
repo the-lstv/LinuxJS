@@ -14,7 +14,7 @@ Note that this is not hardware/bytecode/kernel emulation.<br>
 The system is rewritten entirely in vanilla JavaScript. You could say that this is a ""port"" of Linux into JavaScript.<br>
 BUT, also note that this is not just any simple "simulator" - the goal is to have a fully functional environment which follows Linux behaviour as closely as possible with the same results, down to the tiny details.
 
-I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>
+<!--I would go as far as to say that this is one of the, if not **THE most accurate** Linux system simulation ever made.<br>-->
 It also has some practical uses, making it even more unique!
 
 Its accuracy and ability to execute bash can be confirmed/benchmarked by running the original, unmodified neofetch command, straight from the oficial neofetch repo!<br>
@@ -28,11 +28,11 @@ This means that they are somewhat compatible and if the executables weren't Java
 ---
 
 **Current version:** 0.3<br>
-## Quick demo
+<!--## Quick demo
 Wanna see it in action? Simply SSH into `ssh root@extragon.cloud -p 2022` with the password `linuxjs` and see for yourself!<br>
 Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
 <img src="https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37" width="400">
-
+-->
 (Note: All files in the demo are only in-memory, once you end the session everything will be lost. Go ahead, try the `rm -rf /` :D)
 
 ## Features
