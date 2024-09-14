@@ -114,11 +114,8 @@ LinuxJS runs processes using either Web Workers (in browsers) or the "isolated-v
 ```js
 // Run "ls -R" and log the result
 
-// First, we initiate our process:
+// First, we initiate our process with some default options and args:
 let runner = await os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
-  // isolation: "default", // Options: default (default), isolated-vm, worker, unsandboxed. Default will use whatever is available from left to right.
-  // Unsandboxed processes have full access to the global scope!! This means that arbitary code could be executed! Be very carefull with this. Unsandboxed processes also cannot be terminated (as they run in the same thread as LinuxJS itself).
-
   onstdout(data){
     console.log(data)
   }
@@ -132,6 +129,11 @@ runner.run()
 
 runner.run(null , ["different_args"], { onstdout: console.log })
 
+// We can also use events like this
+let process = runner.run()
+process.on("stdout", data => {})
+process.on("exit", code => {})
+
 // And each time we call .run like this, a new process is spawned with an unique PID.
 
 // Async variant (stores stdout in a buffer, waits for exit, returns the buffer)
@@ -140,9 +142,14 @@ console.log( await os.exec("ls -R") )
 
 ### Terminating a process:
 ```js
-let myProcess = await os.process("ls", null, ["-R"], {})
+// We can call .terminate to gracefully terminate a process or .kill to forcefully terminate a process.
+// process.terminate is the equivalent of process.signal(15)
 
-setTimeout(myProcess.terminate, 2000)
+let runner = await os.process("some-long-taking-command", null, [], {})
+
+let instance = runner.run()
+
+setTimeout(instance.kill, 2000) // Call instance.kill() after 2 seconds, stopping the process.
 ```
 <img src="https://github.com/user-attachments/assets/5574c22d-d516-4f4d-9068-e14b24e3ff9f" width="120"><br>
 Like mentioned above, processes are launched with either Workers or isolated-vm, depending on what is available. Workers are less secure and thus there is a possibility that they could leak out to the global context and possibly do things that they should not be doing (be especially mindful of this when using Node).<br>
@@ -420,20 +427,16 @@ await os.fs.exists(LinuxJS.accessDirectly(descriptor))
 ## Launching processes
 Launching a process is also a pretty heavy operation - the same path operations apply, then the process has to be initialized, code compiled and so on. You can speed this up significantly if you need to call a specific command/script/"executable" often.
 ```js
-// Initiate your process like usual but with the delayStart option to prevent execution
-let executor = await os.process("ls", null, null, { delayStart: true });
+// Initiate your process first, and only once
+let runner = await os.process("ls");
 
-// Use this crazy wrapper to get direct access to the runner
-let runner = LinuxJS.ProcessRunnerWrapper(await executor.GetIsolator().preCompile())
-
-// You can now run your process quickly:
-runner.run(["-R"], { // args, options
+// You can now run your process faster:
+runner.run(null, ["-R"], { // pwd, args, options
   // ... custom options
 })
 
 // And you can do this as many times as you want:
-runner.run([], {})
+runner.run(null, [], {})
 
-// Technically to get the maximum performance, you could also set the "isolator" to "unsandboxed", but do NOT do this unless you 120% trust the code and environment.
-// The performance benefit of unsandboxed also depends on how much actual synchronous work the process does - because unsandboxed processes get run in the same global thread, so the performance may actually be worse.
+// WARNING: Providing null or nothing on any of the arguments will cause them to fallback to the default ones specified when calling os.process!
 ```
