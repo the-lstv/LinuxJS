@@ -173,9 +173,10 @@ let bash = os.process("bash", "~", ["-i"], {
   }
 })
 
+let instance = bash.run()
+
 term.onData(data => {
-  bash.std.in = data // Pushes the data into the standard input
-  // alternatively: bash.std.input(data)
+  instance.write(data) // Pushes the data into the standard input
 })
 ```
 
