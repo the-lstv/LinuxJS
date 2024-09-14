@@ -113,7 +113,9 @@ let os = await LinuxJS({ disk })
 LinuxJS runs processes using either Web Workers (in browsers) or the "isolated-vm" module (in Node.js)
 ```js
 // Run "ls -R" and log the result
-os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
+
+// First, we initiate our process:
+let runner = await os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
   // isolation: "default", // Options: default (default), isolated-vm, worker, unsandboxed. Default will use whatever is available from left to right.
   // Unsandboxed processes have full access to the global scope!! This means that arbitary code could be executed! Be very carefull with this. Unsandboxed processes also cannot be terminated (as they run in the same thread as LinuxJS itself).
 
@@ -121,6 +123,16 @@ os.process("ls", null, ["-R"], {  // command, pwd, arguments, options
     console.log(data)
   }
 })
+
+// Then, start it:
+runner.run()
+
+// Important Note: os.process itself only prepares the process for executing, it does NOT create or launch the actual process.
+// .run() can be called multiple times, and can even have its own pwd, args, and options:
+
+runner.run(null , ["different_args"], { onstdout: console.log })
+
+// And each time we call .run like this, a new process is spawned with an unique PID.
 
 // Async variant (stores stdout in a buffer, waits for exit, returns the buffer)
 console.log( await os.exec("ls -R") )
