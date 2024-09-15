@@ -1,4 +1,3 @@
-
 (global => {
     let JSZip;
 
@@ -10,9 +9,6 @@
         }
     }
 
-    // Breaking change: Since 0.4, the filesystem has been totally reworked, but now sadly requires every single method to be async and awaited (due to an internal read method required for symlinks).
-    // This means that you now have to use async/await everywhere :(
-
     async function LinuxJS(options = {}){
         if(!JSZip && !global.JSZip && !options.JSZip){
             throw "JSZip is required for LinuxJS to run. Either expose it globally as 'JSZip' or provide it via options."
@@ -20,8 +16,6 @@
 
 
         if(!options.image) throw "You must specify a virtual system image/copy!";
-
-        // Initization of the filesystem;
 
 
         // Create a virtual filesystem;
@@ -51,7 +45,6 @@
         let lastPID = 1, _bootComplete = false;
 
         const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-
 
         // Init the "os" object;
 
@@ -113,37 +106,46 @@
             },
     
             get lastPID(){
+                // "readonly"
                 return lastPID
             },
     
             proc: {},
-            shared: {},
-    
-            exec(command, options = {}) {
-                // TODO: Use bash
 
-                command = command.split(" ");
-                return os.process(command[0], options.pwd || null, command.slice(1), options)
-            },
+            shared: {},
 
             async process(executable, pwd, args = [], options = {}) {
-                let pid = lastPID++, prepared = false;
-        
-                let thing = (_this => class Process {
+                let prepared = false, _this;
+
+                let processRunnerInstance = new class Process {
                     constructor(){
                         _this = this;
-                        this.options = options;
-                        this.pid = pid;
+
+                        _this.deafultOptions = options;
+                    }
+
+                    getWorker(env = {}){
+                        if(!prepared) throw "Process was not prepared yet!";
+
+                        let worker = new Worker(_this.workerSource)
+
+                        // Initialize worker
+                        env.type = "init";
+                        worker.postMessage(env)
+
+                        return worker
                     }
 
                     async _init_(){
 
                         /*
-                            This function just looks for where the binary/script are located and prepares the procces for launch.
-                            Normally this should be a part of the constructor, but it is not because it requires "await" due to filesystem operations.
+                            This function just prepares the procces for launch.
                         */
 
                         if(prepared) throw "Cannot call ._init_() twice!";
+
+
+                        // First, we need to find the executable
 
                         executable = "/" + os.fs.normalizePath(await os.fs.search(os.env.PATH, executable));
 
@@ -152,166 +154,265 @@
                         let object = await os.fs.getObject(executable, pwd);
                         let descriptor = object.fileSystem.getDescriptor(object.relativePath);
 
-                        // Initialize standard input output system
-
-                        _this.std = LinuxJS.stdio(options.stdioOptions || {});
-                        this.std.onstdin = options.onstdin || null;
-                        this.std.onstdout = options.onstdout || null;
-                        this.std.onstderr = options.onstderr || null;
+                        // Initialize input output
 
                         if(!descriptor || descriptor.dir) {
-                            let error = !descriptor? "ENOENT" : "EISDIR";
-            
-                            this.std.err = error
-                            if(options.onexit) options.onexit(2)
-                            _this.terminate()
-            
-                            throw error
+                            return 2
                         }
-            
+
                         if(!pwd) pwd = executable_path;
 
-                        this.pwd = "/" + os.fs.normalizePath(pwd + "/");
+                        
+                        _this.fileDescriptor = descriptor
+                        _this.fileLocation = executable
+                        _this.fileDirectory = executable_path
 
-                        this.file_handle = descriptor
-                        this.source_exec = executable
-                        this.source = executable_path
-                        this.args = args
+                        _this.defaultPwd = "/" + os.fs.normalizePath(pwd + "/");
+                        _this.defaultArgs = args
+
+                        _this.source_data = await os.fs.read(_this.fileLocation, "arraybuffer");
+
+                        if(decoder.decode(_this.source_data.slice(0, 2)) === "#!") {
+                            // The executable is a script starting with a "shebang".
+
+                            _this.source_data = decoder.decode(_this.source_data)
+
+                            let match = _this.source_data.match(/^#!(.*)\n/);
+
+                            if(match && match[1]){
+                                _this.interpreter = match[1].trim();
+
+                                _this.source_data = _this.source_data.slice(match[0].length);
+
+                                switch(_this.interpreter){
+                                    // Some hard-coded interpreters
+                                    // FIXME: Fix this
+            
+                                    case "/bin/js": case "/usr/bin/js": case "/usr/bin/node": case "/bin/node": case "/usr/bin/env node":
+                                        
+                                    default:
+                                        // TODO: Implement interpreters properly!
+                                        break;
+                                }
+
+                            } else {
+                                // TODO: Better error handling
+                                throw "bad interpreter: No such file or directory"
+                            }
+                        }
+
+                        _this.workerSource = LinuxJS.createProccessSource(_this.source_data);
 
                         prepared = true;
-                        if(!options.delayStart && !options.delay) this.run()
                     }
 
-                    run(){
+                    run(pwd, args, options){
                         if(!prepared) throw "Process was not prepared yet!";
 
-                        return new Promise(async (resolve, reject) => {
-                            let data = await os.fs.read(_this.source_exec, "arraybuffer");
-            
-                            if(decoder.decode(data.slice(0, 2)) === "#!") {
+                        options = options? {..._this.deafultOptions, ...options}: _this.deafultOptions;
 
-                                // The executable is a script starting with a "shebang".
+                        let worker, started = false, pid = lastPID++;
 
-                                data = decoder.decode(data)
+                        let instance = {
+                            pid,
 
-                                let match = data.match(/^#!(.*)\n/);
+                            alive: true,
+                            
+                            terminate(){
+                                instance.signal(15)
+                            },
 
-                                if(match && match[1]){
-                                    const shell = match[1].trim();
+                            kill(){
+                                // Normally a signal 9 would be sent, but we are just directly terminating the program anyway, so this step was skipped.
 
-                                    data = data.replace(match[0], "");
-                
-                                    switch(shell){
-                                        // Some hard-coded interpreters
-                                        // FIXME: Fix this
-                
-                                        case "/bin/js": case "/usr/bin/js": case "/usr/bin/node": case "/bin/node": case "/usr/bin/env node":
-                                            let std = _this.std,
-                                                pwd = _this.pwd,
-                                                args = _this.args,
-                                                env = _this.options.env || {},
-                                                process = _this,
-                                                code = null
-                                            ;
-                
-                                            function exit(code = 0){
-                                                resolve(code)
-            
-                                                _this.terminate(code)
-            
-                                                // throw `exit:${code}`
+                                worker.terminate()
+                                instance.invoke("exit", 137)
+                                instance.alive = false
+                            },
+                            
+                            signal(value){
+                                worker.postMessage({
+                                    type: 'signal',
+                                    value
+                                });
+                            },
+
+                            write(data){
+                                worker.postMessage({
+                                    type: 'stdin',
+                                    data
+                                });
+                            },
+
+                            resume(){
+                                // Not to be confused with pausing/resuming the process state, this only resumes the execution if the pause option is set to true for delayed start.
+                                if(!started) execute()
+                            },
+
+                            childProcesses: []
+                        }
+
+                        LinuxJS.signalHandler(instance, options);
+
+                        function execute(){
+                            started = true;
+
+                            instance.promise = new Promise((resolve, reject) => {
+                                worker = _this.getWorker({
+                                    args: args || _this.defaultArgs || [],
+                                    pwd: pwd || _this.defaultPwd || _this.fileDirectory,
+                                    env: {...os.env, ...options.env || {}},
+                                })
+    
+                                worker.onmessage = async function(event) {
+                                    // Signal received from host
+    
+                                    let signal = event.data;
+    
+                                    if(!signal || !signal.type) return;
+    
+                                    switch(signal.type){
+                                        case "stdout":
+                                            instance.invoke("stdout", signal.data)
+                                        break
+    
+                                        case "stderr":
+                                            instance.invoke("stderr", signal.data)
+                                        break
+    
+                                        case "exit": case "terminate": case "kill":
+                                            worker.terminate()
+                                            instance.invoke("exit", signal.code || 0)
+                                            instance.alive = false
+                                        break
+    
+                                        case "stream_pipe_in":
+                                            if(os.proc[signal.pid]) os.proc[signal.pid].write(signal.data)
+                                        break
+    
+                                        case "stream_pipe_signal":
+                                            if(os.proc[signal.pid]) {                                                
+                                                if(signal.value === 9) return os.proc[signal.pid].kill();
+
+                                                os.proc[signal.pid].signal(signal.value)
                                             }
-                
-                                            // TODO: Cache functions to boost performance (eliminate the need to re-compile each time)
-                                            let handle = new AsyncFunction('os', 'std', 'args', 'pwd', "process", "exit", "env", "global", data);
-                
-                                            try {
-                                                code = await handle(os, std, args, pwd, process, exit, env, global);
-                                            } catch (error) {
-                
-                                                if(error && typeof error.message == "string" && error.message.startsWith("exit:")) {
-                                                    return
-                                                }
-                
-                                                _this.std.stderr = error.toString();
+                                        break
+    
+                                        case "syscall":
+                                            switch(signal.to){
+                                                case "exec":
+                                                    // Spawn a child process
+    
+                                                    let childRunner;
 
+                                                    try{
+                                                        childRunner = await os.process(signal.args[0], signal.args[1], signal.args[2]);
+                                                    } catch (error) {
+                                                        worker.postMessage({
+                                                            type: "callback",
+                                                            callback: signal.callback,
+                                                            data: {error}
+                                                        })
+                                                        return
+                                                    }
+    
+                                                    // "pipe" events to the parent
+                                                    let child = childRunner.run(null, null, {    
+                                                        onstdout(data){
+                                                            worker.postMessage({
+                                                                type: "stream_pipe_out",
+                                                                pid: child.pid,
+                                                                data
+                                                            })
+                                                        },
+    
+                                                        onstderr(data){
+                                                            worker.postMessage({
+                                                                type: "stream_pipe_err",
+                                                                pid: child.pid,
+                                                                data
+                                                            })
+                                                        },
+                                                
+                                                        onexit(code){
+                                                            worker.postMessage({
+                                                                type: "stream_pipe_exit",
+                                                                pid: child.pid,
+                                                                code
+                                                            })
+                                                        },
+    
+                                                        env: signal.env || {},
+    
+                                                        pause: true
+                                                    })
+    
+                                                    worker.postMessage({
+                                                        type: "callback",
+                                                        callback: signal.callback,
+                                                        data: child.pid
+                                                    })
+    
+                                                    child.resume()
+    
+                                                    instance.childProcesses.push(child)
+                                                break
+
+                                                case "fs":
+                                                    // Filesystem operation ("high-level way", not following the actual GNU/Linux way)
+
+                                                    if(os.fs[signal.args[0]] && typeof os.fs[signal.args[0]] === "function"){
+                                                        let result, error;
+
+                                                        try{
+                                                            result = await os.fs[signal.args[0]](...signal.args[1])
+                                                        } catch (errorMessage) { error = errorMessage.toString() }
+
+                                                        worker.postMessage({
+                                                            type: "callback",
+                                                            callback: signal.callback,
+                                                            data: {result, error}
+                                                        })
+                                                    }
+                                                break
+
+                                                case "export":
+                                                    // Filesystem operation ("high-level way", not following the actual GNU/Linux way)
+
+                                                    for(let env of signal.args){
+                                                        env = env.split("=");
+                                                        os.env[env[0]] = env[1]
+                                                    }
+
+                                                    worker.postMessage({
+                                                        type: "callback",
+                                                        callback: signal.callback
+                                                    })
+                                                break
                                             }
-                
-                                        default:
-                                            // TODO: Implement interpreter pass
-                                            break;
+                                        break
                                     }
-                                
-                                } else {
-                                    throw "bad interpreter: No such file or directory"
                                 }
-                            }
-                        })
-                    }
-        
-                    signal(signal){
-                        // Handle signals
-                    }
-        
-                    terminate(code = 0){
-                        // TODO: ...
-        
-                        if(typeof code != "number" || code < 0 || code > 255) throw new Error("Invalid exit code \""+ code + "\". Only a number from 0 to 255 is allowed.");
-        
-                        if(_this.options.onexit) _this.options.onexit(code)
-                        _this.std.clearBuffers()
-        
-                        delete os.proc[pid]
-                    }
-                })()
-            
-                let process = new thing();
-        
-                os.proc[pid] = process;
+    
+                                worker.onerror = function(event) {
+                                    instance.invoke("stderr", event.toString())
+                                }
+                            })
+                        }
 
-                await process._init_()
+                        if(!options.pause) execute()
 
-                return process
-            },
-
-            // Probably soon to be deprecated!
-            terminalUtils: {
-                gradient(text, from = 196, to = 204) {
-                    console.warn("os.terminalUtils is soon to be deprecated!");
-
-                    let gradientColors = [],
-                        lines = text.split('\n'),
-                        steps = lines.length,
-                        start = from,
-                        end = to,
-                        step = (end - start) / steps;
-                    ;
-                
-                    for (let i = 0; i < steps; i++) {
-                        const color = start + Math.round(step * i);
-                        gradientColors.push(`\x1b[38;5;${color}m`);
+                        return os.proc[pid] = instance;
                     }
-                
-                    let gradientText = "", i = -1;
-                    for (let line of lines) {
-                        i++
-                        gradientText += gradientColors[i] + line + "\n";
-                    }
-                    gradientText += "\x1b[0m";
-                
-                    return gradientText;
                 }
+
+                let errorCode = await processRunnerInstance._init_()
+
+                if(errorCode) throw errorCode;
+
+                return processRunnerInstance
             }
         }
-    
-        // Global system stdio
-        os.std = LinuxJS.stdio();
-        
-        // os.import = function (what) {
-        //     // TODO: Add permissions etc
-        
-        //     return app[what]
-        // }
 
         return os;
     }
@@ -698,145 +799,6 @@
 
         return normalizedPath == "/"? "" : normalizedPath;
     }
-
-
-    LinuxJS.stdio = function (options = {}){
-        
-        // Note that this is just a middleman between the process and your implementation
-
-        let defaults = {
-            buffer: false
-        }
-
-        options = global.LS? LS.Util.defaults(defaults, options): {...defaults, ...options}
-
-        return new ((_this => class StandardInputOutput {
-            constructor(){
-                _this = this;
-
-                // this.buffer = {
-                //     in: [],
-                //     out: [],
-                //     err: []
-                // };
-
-                this.options = options;
-
-                if(global.LS && LS.EventResolver) new (LS.EventResolver()) (this);
-
-                this.listeners = {};
-
-                Object.defineProperties(this, {
-                    stdin: {
-                        set(data){
-                            // if(_this.options.buffer) _this.buffer.in.push(...data)
-
-                            if(_this.onstdin) _this.onstdin(data)
-                            if(_this.options.onstdin) _this.options.onstdin(data)
-
-                            _this.invoke("stdin", data)
-                        },
-
-                        get(){
-                            // return _this.buffer.in
-                        }
-                    },
-
-                    stdout: {
-                        set(data){
-                            // if(_this.options.buffer) _this.buffer.out.push(...data)
-
-                            if(_this.onstdout) _this.onstdout(data)
-                            if(_this.options.onstdout) _this.options.onstdout(data)
-
-                            _this.invoke("stdout", data)
-                        },
-
-                        get(){
-                            // return _this.buffer.out
-                        }
-                    },
-
-                    stderr: {
-                        set(data){
-                            // if(_this.options.buffer) _this.buffer.err.push(...data)
-
-                            if(_this.onstderr) _this.onstderr(data)
-                            if(_this.options.onstderr) _this.options.onstderr(data)
-                            _this.invoke("stderr", data)
-                        },
-
-                        get(){
-                            // return _this.buffer.err
-                        }
-                    },
-
-
-                    // Aliases
-
-                    in: {
-                        set(data){
-                            return _this.stdin = data
-                        },
-
-                        get(){
-                            return _this.stdin
-                        }
-                    },
-
-                    out: {
-                        set(data){
-                            return _this.stdout = data
-                        },
-
-                        get(){
-                            return _this.stdout
-                        }
-                    },
-
-                    err: {
-                        set(data){
-                            return _this.stderr = data
-                        },
-
-                        get(){
-                            return _this.stderr
-                        }
-                    },
-                })
-            }
-
-            write(data){
-                _this.stdout = data
-            }
-
-            error(data){
-                _this.stderr = data
-            }
-
-            input(data){
-                _this.stdin = data
-            }
-
-            clearBuffers(){
-                // _this.buffer.in = []
-                // _this.buffer.out = []
-                // _this.buffer.err = []
-            }
-
-
-            // Simple alternate event resolver in case LS is not present
-            on(event, callback){
-                if(!_this.listeners[event]) _this.listeners[event] = [];
-                _this.listeners[event].push(callback)
-            }
-
-            invoke(event, data){
-                if(!_this.listeners[event]) return;
-                for(let callback of _this.listeners[event]) callback(data);
-            }
-        })())
-    }
     
 
     // Mostly just a helper for browsers
@@ -857,6 +819,234 @@
         }
     }
 
+    LinuxJS.signalHandler = function (target, parent) {
+        let listeners = {};
+
+        target.on = function (type, callback){
+            if(!listeners[type]) listeners[type] = [];
+            listeners[type].push(callback)
+        }
+
+        target.invoke = function (type, ...data){
+            if(typeof parent[`on${type}`] === "function") parent[`on${type}`](...data)
+
+            if(listeners[type]){
+                for(let listener of listeners[type]) listener(...data)
+            }
+        }
+    }
+
+    processWorkerCode = (async function (run){
+        let initialized = false, stdinlisteners = [], syscallCallbackID = 0, syscallCallbackListeners = {}, childProcessEvents = {};
+
+        function registerChildStreamListeners(pid, listeners = {}){
+            childProcessEvents[pid] = {
+                out: listeners.out,
+                err: listeners.err,
+                exit: listeners.exit
+            }
+        }
+
+        function syscall(call, options = {}){
+            let callback = syscallCallbackID++
+
+            postMessage({
+                type: "syscall",
+                to: call,
+                callback,
+                args: options.args || [],
+                env
+            })
+
+            syscallCallbackListeners[callback] = options.callback || (() => {})
+        }
+
+        // Proxy FS
+        fs = new Proxy({}, {
+            get(target, key){
+                return function proxyFunction(...args){
+                    return new Promise((resolve, reject) => {
+                        syscall("fs", {
+                            args: [key, args],
+                            callback(result){
+                                if(result.error) return reject(result.error);
+                                resolve(result.result)
+                            }
+                        })
+                    })
+                }
+            }
+        })
+
+        self.onmessage = function (event) {
+            // Signal received from host
+            let signal = event.data;
+
+            if(!signal || !signal.type) return;
+
+            switch(signal.type){
+                case "init":
+                    if(initialized){
+                        throw new Error("Forking (re-initialization) a process is currently not supported")
+                    }
+
+                    env = signal.env;
+
+                    let globals = {
+                        args: signal.args,
+                        pwd: signal.pwd,
+
+                        exit(code = 0){
+                            postMessage({
+                                type: "exit",
+                                code
+                            })
+                        },
+
+                        std: {
+                            write(data){
+                                postMessage({
+                                    type: "stdout",
+                                    data
+                                })
+                            },
+
+                            writeError(data){
+                                postMessage({
+                                    type: "stderr",
+                                    data
+                                })
+                            },
+
+                            onData(listener){
+                                stdinlisteners.push(listener)
+                            }
+                        },
+
+                        exec(command, pwd, arguments, listeners){
+                            return new Promise(resolve => {
+                                globals.call("exec", {
+                                    args: [command, pwd, arguments],
+
+                                    callback: pid => {
+
+                                        if(pid.error){
+                                            resolve({error: pid.error})
+                                        }
+
+                                        if(listeners){
+                                            registerChildStreamListeners(pid, listeners)
+                                        }
+
+                                        resolve({
+                                            pid,
+
+                                            write(data){
+                                                postMessage({
+                                                    type: "stream_pipe_in",
+                                                    pid,
+                                                    data
+                                                })
+                                            },
+
+                                            terminate(){
+                                                postMessage({
+                                                    type: "stream_pipe_signal",
+                                                    pid,
+                                                    value: 15
+                                                })
+                                            },
+
+                                            kill(){
+                                                console.log(pid);
+                                                
+                                                postMessage({
+                                                    type: "stream_pipe_signal",
+                                                    pid,
+                                                    value: 9
+                                                })
+                                            },
+
+                                            signal(value){
+                                                postMessage({
+                                                    type: "stream_pipe_signal",
+                                                    pid,
+                                                    value
+                                                })
+                                            }
+                                        })
+                                    }
+                                })
+                            })
+                        },
+
+                        registerChildStreamListeners,
+
+                        call: syscall
+                    };
+
+                    run(globals)
+                break
+
+                case "signal":
+                    // TODO: Handle signals
+                    switch(signal.value){
+                        case 15: // Terminate
+                            // TODO: Handle graceful termination
+                            postMessage({
+                                type: "exit",
+                                code: 143
+                            })
+                        break
+
+                        case 9: // Kill
+                            postMessage({
+                                type: "exit",
+                                code: 137
+                            })
+                    }
+                break
+
+                case "stdin":
+                    for(let listener of stdinlisteners) listener(signal.data)
+                break
+
+                case "callback":
+                    if(syscallCallbackListeners[signal.callback]){
+                        syscallCallbackListeners[signal.callback](signal.data)
+                        syscallCallbackListeners[signal.callback] = null
+                    }
+                break
+
+                case "stream_pipe_out":
+                    if(childProcessEvents[signal.pid] && typeof childProcessEvents[signal.pid].out === "function") childProcessEvents[signal.pid].out(signal.data)
+                break
+
+                case "stream_pipe_err":
+                    if(childProcessEvents[signal.pid] && typeof childProcessEvents[signal.pid].err === "function") childProcessEvents[signal.pid].err(signal.data)
+                break
+
+                case "stream_pipe_exit":
+                    if(childProcessEvents[signal.pid] && typeof childProcessEvents[signal.pid].exit === "function") childProcessEvents[signal.pid].exit(signal.code)    
+                break
+            }
+        };
+    }).toString()
+
+
+    LinuxJS.createProccessSource = function (code) {
+        if(typeof code !== "string"){
+            throw "This type of executable is not supported yet."
+        }
+
+        code = `let env,fs;(${processWorkerCode})(async ({args, pwd, exit, std, call, exec, registerChildStreamListeners}) => {${code}})`
+
+        return URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+    }
+
+    LinuxJS.revokeProccessSource = function (source) {
+        return URL.revokeObjectURL(source)
+    }
 
 
     // Both Node.JS and browser environments
