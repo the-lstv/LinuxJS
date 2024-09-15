@@ -25,11 +25,14 @@ But if you don't believe me, just take neofetch from your own /bin/neofetch and 
 The LinuxJS.js file is only a library that provides filesystem and stdio APIs - everything about the system itself, including the bash, is entirely inside the system image, which is built to precisely follow the structure of the GNU+Linux system, as much as it can.<br>
 This means that they are somewhat compatible and if the executables weren't JavaScript, then the image could very well be an actual Linux distro (well, without the actual operating system and kernel).
 
+> [!NOTE]  
+> Our goal is to have little to no dependencies. Starting a recent update, I have decided to replace my custom ShellScript (bash) parser with "bash-parser" and "coreutils.js" to implement some of the coreutils commands, replacing my own versions, which haven't been fully stable.
+> They are properly attributed and bundled inside the "system image" file.
 ---
 
 **Current version:** 0.3<br>
 <!--## Quick demo
-Wanna see it in action? Simply SSH into `ssh root@extragon.cloud -p 2022` with the password `linuxjs` and see for yourself!<br>
+Wanna see it in action? Simply SSH into `ssh root@extragon.cloud` with the password `linuxjs` and see for yourself!<br>
 Its almost hard to believe that the system is not an actual Linux machine at all, but everything is handled by a small JavaScript library!
 <img src="https://github.com/user-attachments/assets/c57fb80d-7c8b-45e2-8bfb-ea9f87623f37" width="400">
 -->
